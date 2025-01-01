@@ -3,11 +3,12 @@
 
 volatile int lora_data_received = 0;
 volatile char lora_data[ECU_LORA_BUFSIZE];
+volatile uint32_t ecu_lora_msg_count = 0;
 
-int get_ecu_lora_data(uint8_t* buf, int buf_len)
+u_int get_ecu_lora_data(uint8_t* buf, int buf_len)
 {
     noInterrupts();
-    int i = 0;
+    u_int i = 0;
     if (lora_data_received > 0)
     {
         for (i = 0; i < lora_data_received && i < buf_len; i++)
@@ -29,6 +30,7 @@ void onReceive(int packetSize)
         lora_data[i] = (char)LoRa.read();
     }
     lora_data_received = i;
+    ecu_lora_msg_count++;
 }
 
 bool ECULoRaInit(int ss_pin, int reset_pin, int interrupt_pin, SPIClass* spi, int lora_sck, int lora_miso, int lora_mosi)
