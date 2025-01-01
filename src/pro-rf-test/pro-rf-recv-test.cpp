@@ -3,7 +3,7 @@
 
 int LED = 13;
 
-char lora_buffer[ECU_LORA_BUFSIZE];
+uint8_t lora_buffer[ECU_LORA_BUFSIZE];
 
 void setup()
 {
@@ -30,7 +30,7 @@ void loop()
         // received a packet
         SerialUSB.print(pbuf);
         SerialUSB.print(" <");
-        SerialUSB.print(lora_buffer);
+        SerialUSB.print((char*)lora_buffer);
         SerialUSB.println(">");
     }
     delay(500);

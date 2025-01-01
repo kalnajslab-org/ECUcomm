@@ -4,7 +4,7 @@
 volatile int lora_data_received = 0;
 volatile char lora_data[ECU_LORA_BUFSIZE];
 
-int get_ecu_lora_data(char *buf, int buf_len)
+int get_ecu_lora_data(uint8_t* buf, int buf_len)
 {
     noInterrupts();
     int i = 0;
