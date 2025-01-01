@@ -31,12 +31,12 @@ void onReceive(int packetSize)
     lora_data_received = i;
 }
 
-void ECULoRaInit(int ss_pin, int reset_pin, int interrupt_pin, SPIClass* spi, int lora_sck=SCK, int lora_miso=MISO, int lora_mosi=MOSI)
+void ECULoRaInit(int ss_pin, int reset_pin, int interrupt_pin, SPIClass* spi, int lora_sck, int lora_miso, int lora_mosi)
 {
 #ifdef ARDUINO_TEENSY41
-    spi->setSCK(SCK);
-    spi->setMISO(MISO);
-    spi->setMOSI(MOSI);
+    spi->setSCK(lora_sck);
+    spi->setMISO(lora_miso);
+    spi->setMOSI(lora_mosi);
 
     LoRa.setSPI(*spi);
 #endif
@@ -49,12 +49,13 @@ void ECULoRaInit(int ss_pin, int reset_pin, int interrupt_pin, SPIClass* spi, in
     LoRa.setSignalBandwidth(BANDWIDTH);
     delay(1);
     LoRa.setTxPower(RF_POWER);
-
+    delay(1)
     if (!LoRa.begin(FREQUENCY))
     {
         SerialUSB.println("WARN: LoRa Initialization Failed");
     }
 
-        LoRa.onReceive(onReceive);
-        LoRa.receive();
+    // Enable interrupt handling for LoRa
+    LoRa.onReceive(onReceive);
+    LoRa.receive();
 }
