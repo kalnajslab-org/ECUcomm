@@ -63,3 +63,17 @@ bool ECULoRaInit(int ss_pin, int reset_pin, int interrupt_pin, SPIClass* spi, in
 
     return true;
 }
+
+int ecu_lora_rssi() { 
+    return LoRa.packetRssi(); 
+}
+
+float ecu_lora_snr() { 
+    return LoRa.packetSnr(); 
+}
+
+long ecu_lora_frequency_error() { 
+    return LoRa.packetFrequencyError(); 
+}
+
+// #endif // _ECULORA_H_    

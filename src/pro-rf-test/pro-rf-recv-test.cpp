@@ -26,7 +26,7 @@ void loop()
         char pbuf[100];
         snprintf(pbuf, sizeof(pbuf),
             "rssi:%5d snr:%6.1f ferr:%6ld",
-            LoRa.packetRssi(), LoRa.packetSnr(), LoRa.packetFrequencyError());
+            ecu_lora_rssi(), ecu_lora_snr(), ecu_lora_frequency_error());
         // received a packet
         SerialUSB.print(pbuf);
         SerialUSB.print(" <");
