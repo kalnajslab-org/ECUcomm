@@ -44,16 +44,16 @@ void ECULoRaInit(int ss_pin, int reset_pin, int interrupt_pin, SPIClass* spi, in
     LoRa.setPins(ss_pin, reset_pin, interrupt_pin);
 
     delay(1);
+    if (!LoRa.begin(FREQUENCY))
+    {
+        SerialUSB.println("WARN: LoRa Initialization Failed");
+    }
+    delay(1);
     LoRa.setSpreadingFactor(SF);
     delay(1);
     LoRa.setSignalBandwidth(BANDWIDTH);
     delay(1);
     LoRa.setTxPower(RF_POWER);
-    delay(1)
-    if (!LoRa.begin(FREQUENCY))
-    {
-        SerialUSB.println("WARN: LoRa Initialization Failed");
-    }
 
     // Enable interrupt handling for LoRa
     LoRa.onReceive(onReceive);
