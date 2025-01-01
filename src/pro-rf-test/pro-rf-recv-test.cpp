@@ -21,7 +21,7 @@ void setup()
 
 void loop()
 {
-    if (get_ecu_lora_data(lora_buffer, 200))
+    if (get_ecu_lora_data(lora_buffer, ECU_LORA_BUFSIZE))
     {
         char pbuf[100];
         snprintf(pbuf, sizeof(pbuf),
