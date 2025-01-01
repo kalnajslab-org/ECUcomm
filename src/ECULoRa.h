@@ -6,7 +6,7 @@
 
 #define ECU_LORA_BUFSIZE 200
 
-void ECULoRaInit(int ss_pin, int reset_pin, int interrupt_pin, SPIClass* spi, int lora_sck, int lora_miso, int lora_mosi);
+bool ECULoRaInit(int ss_pin, int reset_pin, int interrupt_pin, SPIClass* spi, int lora_sck, int lora_miso, int lora_mosi);
 
 extern int get_ecu_lora_data(uint8_t *buf, int len);
 
