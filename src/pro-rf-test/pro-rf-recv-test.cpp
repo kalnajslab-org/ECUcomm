@@ -1,0 +1,38 @@
+#include "ECUHardware.h"
+#include "ECULoRa.h"
+
+int LED = 13;
+
+char lora_buffer[ECU_LORA_BUFSIZE];
+
+void setup()
+{
+    pinMode(LED, OUTPUT);
+    digitalWrite(LED, HIGH);
+
+    SerialUSB.begin(115200);
+    delay(1000);
+
+    SerialUSB.println(String(__FILE__) + " build " + __DATE__ + " " + __TIME__);
+
+    ECULoRaInit(12, 7, 6, &SPI, SCK, MISO, MOSI); 
+    SerialUSB.println("LoRa Initialized");
+}
+
+void loop()
+{
+    if (get_ecu_lora_data(lora_buffer, 200))
+    {
+        char pbuf[100];
+        snprintf(pbuf, sizeof(pbuf),
+            "rssi:%5d snr:%6.1f ferr:%6ld",
+            LoRa.packetRssi(), LoRa.packetSnr(), LoRa.packetFrequencyError());
+        // received a packet
+        SerialUSB.print(pbuf);
+        SerialUSB.print(" <");
+        SerialUSB.print(lora_buffer);
+        SerialUSB.println(">");
+    }
+    delay(500);
+    digitalWrite(LED, !digitalRead(LED));
+}
