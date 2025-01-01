@@ -15,8 +15,12 @@ void setup()
 
     SerialUSB.println(String(__FILE__) + " build " + __DATE__ + " " + __TIME__);
 
-    ECULoRaInit(12, 7, 6, &SPI, SCK, MISO, MOSI); 
-    SerialUSB.println("LoRa Initialized");
+    if (!ECULoRaInit(12, 7, 6, &SPI, SCK, MISO, MOSI)) {
+        SerialUSB.println("LoRa Init Failed");
+        while (1); // halt
+    } else {
+        SerialUSB.println("LoRa Init Success");
+    }
 }
 
 void loop()
