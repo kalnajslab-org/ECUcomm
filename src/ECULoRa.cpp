@@ -50,6 +50,8 @@ bool ecu_lora_send_msg(uint8_t *data, uint8_t len)
     if (status) { 
         xmitd_msg_count++;
     }
+    // The receive interrupt must be re-enabled after sending a message.
+    // This doesn't seem to be mentioned in the LoRa library documentation.
     LoRa.receive();
     return status;
 }
