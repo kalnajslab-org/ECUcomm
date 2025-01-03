@@ -16,6 +16,11 @@ bool ECULoRaInit(
     int lora_miso, 
     int lora_mosi)
 {
+    spi->setSCK(lora_sck);
+    spi->setMISO(lora_miso);
+    spi->setMOSI(lora_mosi);
+    LoRa.setSPI(*spi);
+
     LoRa.setPins(ss_pin, reset_pin, interrupt_pin);
 
     delay(1);
