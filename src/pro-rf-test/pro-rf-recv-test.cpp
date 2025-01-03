@@ -3,7 +3,7 @@
 
 int LED = 13;
 
-uint8_t lora_buffer[ECU_LORA_BUFSIZE];
+ECULoRaMsg_t ecu_msg;
 
 void setup()
 {
@@ -25,16 +25,16 @@ void setup()
 
 void loop()
 {
-    if (get_ecu_lora_data(lora_buffer, ECU_LORA_BUFSIZE))
+    if (ecu_lora_get_msg(&ecu_msg))
     {
         char pbuf[100];
         snprintf(pbuf, sizeof(pbuf),
-            "rssi:%5d snr:%6.1f ferr:%6ld",
-            ecu_lora_rssi(), ecu_lora_snr(), ecu_lora_frequency_error());
+            "n:%05lu id:%05lu rssi:%5d snr:%5.1f ferr:%5ld",
+            ecu_msg.count, ecu_msg.id, ecu_lora_rssi(), ecu_lora_snr(), ecu_lora_frequency_error());
         // received a packet
         SerialUSB.print(pbuf);
         SerialUSB.print(" <");
-        SerialUSB.print((char*)lora_buffer);
+        SerialUSB.print((char*)ecu_msg.data);
         SerialUSB.println(">");
     }
     delay(500);

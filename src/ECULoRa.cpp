@@ -1,48 +1,21 @@
 #include "ECULoRa.h"
 #include "ECUHardware.h"
 
-volatile int lora_data_received = 0;
-volatile char lora_data[ECU_LORA_BUFSIZE];
-volatile uint32_t ecu_lora_msg_count = 0;
+volatile uint lora_data_received = 0;
+volatile char lora_data[ECU_LORA_DATA_BUFSIZE];
+volatile uint32_t recvd_msg_count = 0;
+volatile uint32_t xmitd_msg_count = 0;
+void onReceive(int packetSize);
 
-u_int get_ecu_lora_data(uint8_t* buf, int buf_len)
+bool ECULoRaInit(
+    int ss_pin, 
+    int reset_pin, 
+    int interrupt_pin, 
+    SPIClass *spi, 
+    int lora_sck, 
+    int lora_miso, 
+    int lora_mosi)
 {
-    noInterrupts();
-    u_int i = 0;
-    if (lora_data_received > 0)
-    {
-        for (i = 0; i < lora_data_received && i < buf_len; i++)
-        {
-            buf[i] = lora_data[i];
-        }
-        buf[i] = 0;
-        lora_data_received = 0;
-    }
-    interrupts();
-    return i;
-}
-
-void onReceive(int packetSize)
-{
-    int i;
-    for (i = 0; i <  packetSize && i < ECU_LORA_BUFSIZE; i++)
-    {
-        lora_data[i] = (char)LoRa.read();
-    }
-    lora_data_received = i;
-    ecu_lora_msg_count++;
-}
-
-bool ECULoRaInit(int ss_pin, int reset_pin, int interrupt_pin, SPIClass* spi, int lora_sck, int lora_miso, int lora_mosi)
-{
-#ifdef ARDUINO_TEENSY41
-    spi->setSCK(lora_sck);
-    spi->setMISO(lora_miso);
-    spi->setMOSI(lora_mosi);
-
-    LoRa.setSPI(*spi);
-#endif
-
     LoRa.setPins(ss_pin, reset_pin, interrupt_pin);
 
     delay(1);
@@ -66,16 +39,70 @@ bool ECULoRaInit(int ss_pin, int reset_pin, int interrupt_pin, SPIClass* spi, in
     return true;
 }
 
-int ecu_lora_rssi() { 
-    return LoRa.packetRssi(); 
+bool ecu_lora_send_msg(uint8_t *data, uint8_t len)
+{
+
+    ECULoRaPacket_t payload;
+    payload.id = xmitd_msg_count;
+
+    LoRa.beginPacket();
+    LoRa.write((uint8_t *)(&payload.id), sizeof(payload.id));
+    LoRa.write(data, len);
+    LoRa.endPacket();
+    xmitd_msg_count++;
+    return true;
 }
 
-float ecu_lora_snr() { 
-    return LoRa.packetSnr(); 
+bool ecu_lora_get_msg(ECULoRaMsg_t *msg)
+{
+    noInterrupts();
+    uint i = 0;
+    if (lora_data_received > 0)
+    {
+        ECULoRaPacket_t *payload = (ECULoRaPacket_t *)lora_data;
+
+        // WHENEVER YOU CHANGE THE PAYLOAD STRUCTURE, YOU MUST CHANGE THIS LINE
+        uint data_len = lora_data_received - sizeof(payload->id);
+
+        for (i = 0; i < data_len && i < (ECU_LORA_DATA_BUFSIZE - 1); i++)
+        {
+            msg->data[i] = payload->data[i];
+        }
+        msg->data[i] = 0;
+        msg->id = payload->id;
+        msg->count = recvd_msg_count;
+        msg->data_len = data_len;
+
+        lora_data_received = 0;
+    }
+    interrupts();
+    return (i > 0);
 }
 
-long ecu_lora_frequency_error() { 
-    return LoRa.packetFrequencyError(); 
+void onReceive(int packetSize)
+{
+    uint i;
+    for (i = 0; i < (uint)packetSize && i < ECU_LORA_DATA_BUFSIZE; i++)
+    {
+        lora_data[i] = (uint8_t)LoRa.read();
+    }
+    lora_data_received = i;
+    recvd_msg_count++;
 }
 
-// #endif // _ECULORA_H_    
+int ecu_lora_rssi()
+{
+    return LoRa.packetRssi();
+}
+
+float ecu_lora_snr()
+{
+    return LoRa.packetSnr();
+}
+
+long ecu_lora_frequency_error()
+{
+    return LoRa.packetFrequencyError();
+}
+
+// #endif // _ECULORA_H_

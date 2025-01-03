@@ -29,16 +29,13 @@ int counter = 0;
 void loop()
 {
     counter++;
-    int n = snprintf((char *)toSend, MSG_LEN, "%010d:", counter);
-    for (int i = 0; i < MSG_LEN-n; i++)
+    for (int i = 0; i < MSG_LEN; i++)
     {
-        toSend[i+n] = (char)('0' + random(0, 9));
+        toSend[i] = (char)('0' + random(0, 9));
     }
     toSend[MSG_LEN] = 0;
 
-    LoRa.beginPacket();
-    LoRa.write(toSend, MSG_LEN);
-    LoRa.endPacket();
+    ecu_lora_send_msg(toSend, MSG_LEN);
 
     digitalWrite(LED, !digitalRead(LED));
     SerialUSB.println((char*)toSend);
