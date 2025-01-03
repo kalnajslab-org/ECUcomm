@@ -32,7 +32,7 @@ bool ECULoRaInit(
     delay(1);
     LoRa.enableCrc();
 
-    // Enable interrupt handling for LoRa
+    // Enable receive interrupt handling for LoRa
     LoRa.onReceive(onReceive);
     LoRa.receive();
 
@@ -41,16 +41,17 @@ bool ECULoRaInit(
 
 bool ecu_lora_send_msg(uint8_t *data, uint8_t len)
 {
-
     ECULoRaPacket_t payload;
     payload.id = xmitd_msg_count;
-
     LoRa.beginPacket();
     LoRa.write((uint8_t *)(&payload.id), sizeof(payload.id));
     LoRa.write(data, len);
-    LoRa.endPacket();
-    xmitd_msg_count++;
-    return true;
+    bool status = LoRa.endPacket();
+    if (status) { 
+        xmitd_msg_count++;
+    }
+    LoRa.receive();
+    return status;
 }
 
 bool ecu_lora_get_msg(ECULoRaMsg_t *msg)
