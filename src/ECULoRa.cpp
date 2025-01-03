@@ -56,6 +56,8 @@ bool ECULoRaInit(int ss_pin, int reset_pin, int interrupt_pin, SPIClass* spi, in
     LoRa.setSignalBandwidth(BANDWIDTH);
     delay(1);
     LoRa.setTxPower(RF_POWER);
+    delay(1);
+    LoRa.enableCrc();
 
     // Enable interrupt handling for LoRa
     LoRa.onReceive(onReceive);
