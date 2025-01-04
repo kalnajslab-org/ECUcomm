@@ -1,19 +1,19 @@
 #include "ECULoRa.h"
 #include "ECUHardware.h"
 
-volatile uint lora_data_received = 0;
-volatile char lora_data[ECU_LORA_DATA_BUFSIZE];
+volatile uint lora_packet_bytes = 0;
+volatile ECULoRaPacket_t lora_packet;
 volatile uint32_t recvd_msg_count = 0;
 volatile uint32_t xmitd_msg_count = 0;
 void onReceive(int packetSize);
 
 bool ECULoRaInit(
-    int ss_pin, 
-    int reset_pin, 
-    int interrupt_pin, 
-    SPIClass *spi, 
-    int lora_sck, 
-    int lora_miso, 
+    int ss_pin,
+    int reset_pin,
+    int interrupt_pin,
+    SPIClass *spi,
+    int lora_sck,
+    int lora_miso,
     int lora_mosi)
 {
     spi->setSCK(lora_sck);
@@ -52,11 +52,13 @@ bool ecu_lora_send_msg(uint8_t *data, uint8_t len)
     LoRa.write((uint8_t *)(&payload.id), sizeof(payload.id));
     LoRa.write(data, len);
     bool status = LoRa.endPacket();
-    if (status) { 
+    if (status)
+    {
         xmitd_msg_count++;
     }
     // The receive interrupt must be re-enabled after sending a message.
-    // This doesn't seem to be mentioned in the LoRa library documentation.
+    // This doesn't seem to be mentioned in the LoRa library documentation,
+    // but it does appear in the LoRaDuplexCallback example.
     LoRa.receive();
     return status;
 }
@@ -65,23 +67,28 @@ bool ecu_lora_get_msg(ECULoRaMsg_t *msg)
 {
     noInterrupts();
     uint i = 0;
-    if (lora_data_received > 0)
+    if (lora_packet_bytes > 0)
     {
-        ECULoRaPacket_t *payload = (ECULoRaPacket_t *)lora_data;
-
-        // WHENEVER YOU CHANGE THE PAYLOAD STRUCTURE, YOU MUST CHANGE THIS LINE
-        uint data_len = lora_data_received - sizeof(payload->id);
-
-        for (i = 0; i < data_len && i < (ECU_LORA_DATA_BUFSIZE - 1); i++)
+        if (lora_packet_bytes <= sizeof(ECULoRaPacket_t))
         {
-            msg->data[i] = payload->data[i];
+            uint8_t data_len = lora_packet_bytes - ECU_LORA_PACKET_HDR_SIZE;
+            if (data_len > 0)
+            {
+                for (i = 0; i < data_len && i < (ECU_LORA_DATA_BUFSIZE - 1); i++)
+                {
+                    msg->data[i] = lora_packet.data[i];
+                }
+                msg->data[i] = 0;
+                msg->id = lora_packet.id;
+                msg->count = recvd_msg_count;
+                msg->data_len = data_len;
+                lora_packet_bytes = 0;
+            }
+            else
+            {
+                SerialUSB.println("ECULoRa: Invalid data length in received packet");
+            }
         }
-        msg->data[i] = 0;
-        msg->id = payload->id;
-        msg->count = recvd_msg_count;
-        msg->data_len = data_len;
-
-        lora_data_received = 0;
     }
     interrupts();
     return (i > 0);
@@ -90,11 +97,11 @@ bool ecu_lora_get_msg(ECULoRaMsg_t *msg)
 void onReceive(int packetSize)
 {
     uint i;
-    for (i = 0; i < (uint)packetSize && i < ECU_LORA_DATA_BUFSIZE; i++)
+    for (i = 0; i < (uint)packetSize && i < sizeof(ECULoRaPacket_t); i++)
     {
-        lora_data[i] = (uint8_t)LoRa.read();
+        ((uint8_t *)(&lora_packet))[i] = (uint8_t)LoRa.read();
     }
-    lora_data_received = i;
+    lora_packet_bytes = i;
     recvd_msg_count++;
 }
 
