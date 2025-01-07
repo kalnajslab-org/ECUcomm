@@ -2,7 +2,7 @@
 #define _ECUHardware_h_
 
 //LoRa Settings
-#define FREQUENCY 868E6
+#define FREQUENCY 915E6
 #define BANDWIDTH 250E3
 #define SF 9
 #define RF_POWER 19
