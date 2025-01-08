@@ -20,7 +20,7 @@ void setup()
     delay(1000);
 
     SerialUSB.println(String(__FILE__) + " build " + __DATE__ + " " + __TIME__ + " interval " + SEND_INTERVAL_SECS);
-
+    SerialUSB.println("LoRa f:" + String(FREQUENCY/1e6)+"MHz SF:"+String(SF)+" BW:"+String(BANDWIDTH/1e6)+"kHz");
     if (!ECULoRaInit(12, 7, 6, &SPI, SCK, MISO, MOSI))
     {
         SerialUSB.println("LoRa Init Failed");
