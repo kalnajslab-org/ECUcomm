@@ -3,13 +3,13 @@
 #include "ECULoRa.h"
 
 #ifdef ECUCOMMLEADER
-ECULoRaMode_t ecu_lora_mode = LORA_LEADER;
+ECULoRaMode_t my_ecu_lora_mode = LORA_LEADER;
 #else
 #ifdef ECUCOMMFOLLOWER
-ECULoRaMode_t ecu_lora_mode = LORA_FOLLOWER;
+ECULoRaMode_t my_ecu_lora_mode = LORA_FOLLOWER;
 #else
 #ifdef ECUCOMMFREERUN
-ECULoRaMode_t ecu_lora_mode = LORA_FREERUN;
+ECULoRaMode_t my_ecu_lora_mode = LORA_FREERUN;
 #endif
 #endif
 #endif
@@ -39,10 +39,10 @@ void setup()
     delay(3000);
 
     SerialUSB.println(String(__FILE__) + " build:" + __DATE__ + " " + __TIME__);
-    SerialUSB.println(ecu_lora_mode_names[ecu_lora_mode] + " Frequency:" + FREQUENCY + " BW:" + BANDWIDTH + " SF:" + SF + " Interval:" + SEND_INTERVAL_MS);
+    SerialUSB.println(ecu_lora_mode_names[my_ecu_lora_mode] + " Frequency:" + FREQUENCY + " BW:" + BANDWIDTH + " SF:" + SF + " Interval:" + SEND_INTERVAL_MS);
 
     if (!ECULoRaInit(
-            ecu_lora_mode,
+            my_ecu_lora_mode,
             SEND_INTERVAL_MS,
             12, 7, 6,
             &SPI, SCK, MISO, MOSI))
@@ -70,12 +70,12 @@ void loop()
     // Always send the message when in leader mode.
     // In FOLLOWER or FREERUN mode, send the message
     // when the interval has passed.
-    if (ecu_lora_mode == LORA_LEADER || (millis() - lastSendTime > interval))
+    if (my_ecu_lora_mode == LORA_LEADER || (millis() - lastSendTime > interval))
     {
         //        SerialUSB.println("interval:"+String(interval));
         ecu_lora_tx(toSend, MSG_LEN);
         lastSendTime = millis();
-        if (ecu_lora_mode == LORA_FREERUN)
+        if (my_ecu_lora_mode == LORA_FREERUN)
         {
             // In FREERUN mode, the interval is random
             interval = random(SEND_INTERVAL_MS * 0.1, SEND_INTERVAL_MS * 1.1);
@@ -106,7 +106,7 @@ void loop()
         }
         snprintf(pbuf, sizeof(pbuf),
                  "%s n:%05lu id:%05lu delta:%d rssi:%5d snr:%5.1f ferr:%5ld l:%d",
-                 ecu_lora_mode_names[ecu_lora_mode].c_str(), ecu_msg.count, ecu_msg.id, id_delta, ecu_lora_rssi(), ecu_lora_snr(), ecu_lora_frequency_error(), ecu_msg.data_len);
+                 ecu_lora_mode_names[my_ecu_lora_mode].c_str(), ecu_msg.count, ecu_msg.id, id_delta, ecu_lora_rssi(), ecu_lora_snr(), ecu_lora_frequency_error(), ecu_msg.data_len);
         SerialUSB.print(pbuf);
         SerialUSB.print(" <");
         for (int i = 0; i < ecu_msg.data_len; i++)

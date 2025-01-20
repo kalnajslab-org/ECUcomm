@@ -1,6 +1,9 @@
 #include "ECULoRa.h"
 #include "ECUHardware.h"
 
+// Our operational mode.
+volatile ECULoRaMode_t ecu_lora_mode;
+
 // Set true when a message is received and available in rx_lora_packet
 volatile bool rx_ready = false;
 // The received packet.

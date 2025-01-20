@@ -41,9 +41,6 @@ enum ECULoRaMode_t {
     LORA_FREERUN
 };
 
-// Our operational mode.
-extern ECULoRaMode_t ecu_lora_mode;
-
 // The largest LoRa packet size is 255 bytes.
 // Subtract the size of the packet header to get the data buffer size.
 // THIS MUST BE ADJUSTED WHEN ECULoRaPacket_t IS CHANGED.
