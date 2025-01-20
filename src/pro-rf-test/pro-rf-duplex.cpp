@@ -37,7 +37,8 @@ void setup()
     SerialUSB.begin(115200);
     delay(3000);
 
-    SerialUSB.println(ecu_lora_mode_names[ecu_lora_mode]+" "+__FILE__+" build:"+ __DATE__+" "+ __TIME__+ " interval:" + SEND_INTERVAL_SECS);
+    SerialUSB.println(String(__FILE__)+" build:"+ __DATE__+" "+ __TIME__);
+    SerialUSB.println(ecu_lora_mode_names[ecu_lora_mode]+" Frequency:"+FREQUENCY+" BW:"+BANDWIDTH+" SF:"+SF+" Interval:" + SEND_INTERVAL_SECS);
 
     if (!ECULoRaInit(
             ecu_lora_mode,
