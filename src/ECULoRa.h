@@ -5,31 +5,44 @@
 // The ECU LoRa interface
 // This interface is used to send and receive ECU messages over LoRa.
 //
-// ecu_lora_get_msg(): Returns the next received message.
-// ecu_lora_send_msg(): Sends a message.
+// ecu_lora_rx(): Returns the next received message.
+// ecu_lora_tx(): Sends a message.
 //
 // ECULoRaPacket_t is the structure of the packets that are sent over LoRa.
 //
 // ECULoRaMsg_t is the structure of the messages that are 
 //   decoded from ECULoRaPacket_t and delivered to the end user.
 //
-// Received LoRa packets are handled in the onReceive() function, which is
+// Received LoRa packets are handled in the rxReadyISR() function, which is
 // called as an interrupt when a packet is received. 
 //
-// The onReceive function decodes the packet and stores it in the
-// lora_packet structure.
+// The rxReadyISR function decodes the packet and stores it in the
+// rx_lora_packet structure.
 //
-// The lora_packet structure is then decoded by ecu_lora_get_msg() and
+// The rx_lora_packet structure is then decoded by ecu_lora_rx() and
 // delivered to the end user.
 //
-// No buffering is done in the onReceive function, so it is important to
-// call ecu_lora_get_msg() frequently in order to not drop packets.
+// No buffering is done in the rxReadyISR function, so it is important to
+// call ecu_lora_rx() frequently in order to not drop packets.
 //
 // We could add buffering in the interrupt routine if we find that packets
 // are being dropped.
 
 // Docs for LoRa are at https://github.com/sandeepmistry/arduino-LoRa.git
 #include <LoRa.h>
+
+// ECULoRa operational modes
+// LEADER: The leader sends messages at regular intervals.
+// FOLLOWER: The follower sends messages in response to messages from the leader.
+// FREERUN: The ECU sends messages anytime, regardless of whether it receives messages.
+enum ECULoRaMode_t {
+    LORA_LEADER,
+    LORA_FOLLOWER,
+    LORA_FREERUN
+};
+
+// Our operational mode.
+extern ECULoRaMode_t ecu_lora_mode;
 
 // The largest LoRa packet size is 255 bytes.
 // Subtract the size of the packet header to get the data buffer size.
@@ -42,6 +55,9 @@ struct ECULoRaPacket_t {
     uint32_t id;
     // the data field
     uint8_t data[ECU_LORA_DATA_BUFSIZE];
+    // The number of bytes in the data field.
+    // This field must be lst in the structure, and is not transmitted/received.
+    uint8_t data_len;
 };
 // The size of the header of the LoRa packet.
 #define ECU_LORA_PACKET_HDR_SIZE (sizeof(ECULoRaPacket_t) - ECU_LORA_DATA_BUFSIZE)
@@ -58,7 +74,9 @@ struct ECULoRaMsg_t {
     uint8_t data[ECU_LORA_DATA_BUFSIZE];
 };
 
-// Initialize the LoRa hardware
+// Initialize the LoRa system
+// mode: the operational mode
+// leader_report_interval_ms: the minimum interval in ms between leader reports
 // ss_pin: the slave select pin
 // reset_pin: the reset pin
 // interrupt_pin: the interrupt pin
@@ -66,16 +84,29 @@ struct ECULoRaMsg_t {
 // lora_sck: the SPI clock pin
 // lora_miso: the SPI MISO pin
 // lora_mosi: the SPI MOSI pin
-bool ECULoRaInit(int ss_pin, int reset_pin, int interrupt_pin, SPIClass* spi, int lora_sck, int lora_miso, int lora_mosi);
+bool ECULoRaInit(
+    ECULoRaMode_t mode, 
+    int leader_report_interval_ms,
+    int ss_pin, 
+    int reset_pin, 
+    int interrupt_pin, 
+    SPIClass* spi, 
+    int lora_sck, 
+    int lora_miso, 
+    int lora_mosi);
 
 // Check for a received message.
-// Returns true if a message has been received.
-extern bool ecu_lora_get_msg(ECULoRaMsg_t* msg);
-// Send a message.
+// Returns true if a received message is ready.
+// If true, the message is copied to the msg structure.
+extern bool ecu_lora_rx(ECULoRaMsg_t* msg);
+
+// Send a message. It will either be sent immediately,
+// or queued to be sent after the next received message.
+// It will not be sent if in leader mode and the last message was sent too recently.
 // data: the data to send
 // len: the length of the data
-// Returns true if the message was sent.
-extern bool ecu_lora_send_msg(uint8_t* data, uint8_t len);
+// Returns true if the message was queued or sent.
+extern bool ecu_lora_tx(uint8_t* data, uint8_t len);
 
 // Get the RSSI of the last received message.
 extern int ecu_lora_rssi();
