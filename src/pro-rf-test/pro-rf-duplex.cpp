@@ -2,13 +2,13 @@
 #include "ECUHardware.h"
 #include "ECULoRa.h"
 
-#ifdef LEADER
+#ifdef ECUCOMMLEADER
 ECULoRaMode_t ecu_lora_mode = LORA_LEADER;
 #else
-#ifdef FOLLOWER
+#ifdef ECUCOMMFOLLOWER
 ECULoRaMode_t ecu_lora_mode = LORA_FOLLOWER;
 #else
-#ifdef FREERUN
+#ifdef ECUCOMMFREERUN
 ECULoRaMode_t ecu_lora_mode = LORA_FREERUN;
 #endif
 #endif
@@ -19,10 +19,11 @@ int LED = 13;
 
 #define MSG_LEN 50
 uint8_t toSend[MSG_LEN + 1];
-unsigned long lastSendTime = 0;                                 // last send time
-unsigned long interval = SEND_INTERVAL_SECS * 1000;             // interval between sends
-unsigned long lastBlinkTime = 0;                                // last blink time
-unsigned long blink_interval = (SEND_INTERVAL_SECS * 1000) / 4; // interval between blinks
+unsigned long lastSendTime = 0;                      // last send time
+unsigned long interval = SEND_INTERVAL_MS;           // interval between sends
+unsigned long lastBlinkTime = 0;                     // last blink time
+unsigned long blink_interval = SEND_INTERVAL_MS / 4; // interval between blinks
+uint32_t last_received_id = 0;                       // to identify dropped packets
 
 std::map<ECULoRaMode_t, String> ecu_lora_mode_names = {
     {LORA_LEADER, "LEADER"},
@@ -37,12 +38,12 @@ void setup()
     SerialUSB.begin(115200);
     delay(3000);
 
-    SerialUSB.println(String(__FILE__)+" build:"+ __DATE__+" "+ __TIME__);
-    SerialUSB.println(ecu_lora_mode_names[ecu_lora_mode]+" Frequency:"+FREQUENCY+" BW:"+BANDWIDTH+" SF:"+SF+" Interval:" + SEND_INTERVAL_SECS);
+    SerialUSB.println(String(__FILE__) + " build:" + __DATE__ + " " + __TIME__);
+    SerialUSB.println(ecu_lora_mode_names[ecu_lora_mode] + " Frequency:" + FREQUENCY + " BW:" + BANDWIDTH + " SF:" + SF + " Interval:" + SEND_INTERVAL_MS);
 
     if (!ECULoRaInit(
             ecu_lora_mode,
-            SEND_INTERVAL_SECS * 1000,
+            SEND_INTERVAL_MS,
             12, 7, 6,
             &SPI, SCK, MISO, MOSI))
     {
@@ -71,8 +72,14 @@ void loop()
     // when the interval has passed.
     if (ecu_lora_mode == LORA_LEADER || (millis() - lastSendTime > interval))
     {
+        //        SerialUSB.println("interval:"+String(interval));
         ecu_lora_tx(toSend, MSG_LEN);
         lastSendTime = millis();
+        if (ecu_lora_mode == LORA_FREERUN)
+        {
+            // In FREERUN mode, the interval is random
+            interval = random(SEND_INTERVAL_MS * 0.1, SEND_INTERVAL_MS * 1.1);
+        }
     }
 
     if (millis() - lastBlinkTime > blink_interval)
@@ -84,14 +91,28 @@ void loop()
     ECULoRaMsg_t ecu_msg;
     if (ecu_lora_rx(&ecu_msg))
     {
-        char pbuf[100];
-        snprintf(pbuf, sizeof(pbuf),
-                 "%s received n:%05lu id:%05lu rssi:%5d snr:%5.1f ferr:%5ld",
-                 ecu_lora_mode_names[ecu_lora_mode].c_str(), ecu_msg.count, ecu_msg.id, ecu_lora_rssi(), ecu_lora_snr(), ecu_lora_frequency_error());
         // received a packet
+        int id_delta;
+        char pbuf[100];
+        if (last_received_id == 0)
+        {
+            last_received_id = ecu_msg.id;
+            id_delta = 0;
+        }
+        else
+        {
+            id_delta = ecu_msg.id - last_received_id;
+            last_received_id = ecu_msg.id;
+        }
+        snprintf(pbuf, sizeof(pbuf),
+                 "%s n:%05lu id:%05lu delta:%d rssi:%5d snr:%5.1f ferr:%5ld l:%d",
+                 ecu_lora_mode_names[ecu_lora_mode].c_str(), ecu_msg.count, ecu_msg.id, id_delta, ecu_lora_rssi(), ecu_lora_snr(), ecu_lora_frequency_error(), ecu_msg.data_len);
         SerialUSB.print(pbuf);
         SerialUSB.print(" <");
-        SerialUSB.print((char *)ecu_msg.data);
+        for (int i = 0; i < ecu_msg.data_len; i++)
+        {
+            SerialUSB.print((char)ecu_msg.data[i]);
+        }
         SerialUSB.println(">");
     }
 }

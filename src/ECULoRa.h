@@ -32,9 +32,9 @@
 #include <LoRa.h>
 
 // ECULoRa operational modes
-// LEADER: The leader sends messages at regular intervals.
-// FOLLOWER: The follower sends messages in response to messages from the leader.
-// FREERUN: The ECU sends messages anytime, regardless of whether it receives messages.
+// LORA_LEADER: The leader sends messages at regular intervals.
+// LORA_FOLLOWER: The follower sends messages in response to messages from the leader.
+// LORA_FREERUN: The ECU sends messages anytime, regardless of whether it receives messages.
 enum ECULoRaMode_t {
     LORA_LEADER,
     LORA_FOLLOWER,
@@ -59,8 +59,6 @@ struct ECULoRaPacket_t {
     // This field must be lst in the structure, and is not transmitted/received.
     uint8_t data_len;
 };
-// The size of the header of the LoRa packet.
-#define ECU_LORA_PACKET_HDR_SIZE (sizeof(ECULoRaPacket_t) - ECU_LORA_DATA_BUFSIZE)
 
 // Information from a LoRa packet is decoded here, for delivery to the end user.
 struct ECULoRaMsg_t {
