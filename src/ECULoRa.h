@@ -88,7 +88,11 @@ bool ECULoRaInit(
     SPIClass* spi, 
     int lora_sck, 
     int lora_miso, 
-    int lora_mosi);
+    int lora_mosi,
+    long frequency,
+    long bandwidth,
+    int sf,
+    int power);
 
 // Check for a received message.
 // Returns true if a received message is ready.

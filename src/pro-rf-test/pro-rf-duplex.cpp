@@ -1,5 +1,5 @@
 #include <map>
-#include "ECUHardware.h"
+#include "ProRfHardware.h"
 #include "ECULoRa.h"
 
 #ifdef ECUCOMMLEADER
@@ -45,7 +45,8 @@ void setup()
             my_ecu_lora_mode,
             SEND_INTERVAL_MS,
             12, 7, 6,
-            &SPI, SCK, MISO, MOSI))
+            &SPI, SCK, MISO, MOSI,
+            FREQUENCY, BANDWIDTH, SF, RF_POWER))
     {
         SerialUSB.println("LoRa Init Failed");
         while (1)

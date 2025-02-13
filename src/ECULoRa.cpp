@@ -1,5 +1,4 @@
 #include "ECULoRa.h"
-#include "ECUHardware.h"
 
 // Our operational mode.
 volatile ECULoRaMode_t ecu_lora_mode;
@@ -38,7 +37,11 @@ bool ECULoRaInit(
     SPIClass *spi,
     int lora_sck,
     int lora_miso,
-    int lora_mosi)
+    int lora_mosi,
+    long frequency,
+    long bandwidth,
+    int sf,
+    int power)
 {
 #ifdef ARDUINO_TEENSY41
     spi->setSCK(lora_sck);
@@ -53,16 +56,16 @@ bool ECULoRaInit(
     LoRa.setPins(ss_pin, reset_pin, interrupt_pin);
 
     delay(1);
-    if (!LoRa.begin(FREQUENCY))
+    if (!LoRa.begin(frequency))
     {
         return false;
     }
     delay(1);
-    LoRa.setSpreadingFactor(SF);
+    LoRa.setSpreadingFactor(sf);
     delay(1);
-    LoRa.setSignalBandwidth(BANDWIDTH);
+    LoRa.setSignalBandwidth(bandwidth);
     delay(1);
-    LoRa.setTxPower(RF_POWER);
+    LoRa.setTxPower(power);
     delay(1);
     LoRa.enableCrc();
 
