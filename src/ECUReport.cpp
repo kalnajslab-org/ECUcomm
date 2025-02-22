@@ -23,11 +23,15 @@ void ecu_report_init(ECUReport_t& ecu_report)
     ecu_report.gps_alt = 0;
 }
 
+void add_status(bool heat_on, ECUReport_t& report) {
+    report.heat_on = heat_on;
+}
+
 void add_ecu_health(float v5, float v12, float v56, float board_t, ECUReport_t& report) {
     report.v5 = (uint16_t)(v5 * 100);
     report.v12 = (uint16_t)(v12 * 100);
     report.v56 = (uint16_t)(v56 * 100);
-    report.board_t = (uint8_t)((board_t + 100) * 10);
+    report.board_t = (uint16_t)((board_t + 100) * 10);
 }
 
 void add_gps(bool valid, double lat, double lon, double alt, ECUReport_t& report) {
@@ -59,14 +63,15 @@ etl::array<uint8_t, ECU_REPORT_SIZE_BYTES> ecu_report_serialize(ECUReport_t& rep
 
 void ecu_report_print(ECUReport_t* ecu_report)
 {
-    SerialUSB.println("\nECU Report:");
+    SerialUSB.println("ECU Report:");
     SerialUSB.print("rev: "); bin_print(ecu_report->rev, 4); SerialUSB.println();
     SerialUSB.print("heat_on: "); bin_print(ecu_report->heat_on, 1); SerialUSB.println();
     SerialUSB.print("v5: "); bin_print(ecu_report->v5, 9); SerialUSB.print(" (" + String(ecu_report->v5/100.0, 2) + "V)"); SerialUSB.println();
     SerialUSB.print("v12: "); bin_print(ecu_report->v12, 11); SerialUSB.print(" (" + String(ecu_report->v12/100.0, 2) + "V)"); SerialUSB.println();
     SerialUSB.print("v56: "); bin_print(ecu_report->v56, 13); SerialUSB.print(" (" + String(ecu_report->v56/100.0, 2) + "V)"); SerialUSB.println();
+    SerialUSB.print("board_t: "); bin_print(ecu_report->board_t, 11); SerialUSB.print(" (" + String((ecu_report->board_t/10.0)-100.0, 1) + " degC)"); SerialUSB.println();
     SerialUSB.print("gps_valid: "); bin_print(ecu_report->gps_valid, 1); SerialUSB.println();
     SerialUSB.print("gps_lat: "); bin_print(ecu_report->gps_lat, 32); SerialUSB.print(" (" + String(ecu_report->gps_lat/1.0e6, 6) + " deg)"); SerialUSB.println();
     SerialUSB.print("gps_lon: "); bin_print(ecu_report->gps_lon, 32); SerialUSB.print(" (" + String(ecu_report->gps_lon/1.0e6, 6) + " deg)"); SerialUSB.println();
-    SerialUSB.print("gps_alt: "); bin_print(ecu_report->gps_alt, 16); SerialUSB.print(" (" + String(ecu_report->gps_alt, 0) + " m)"); SerialUSB.println();
+    SerialUSB.print("gps_alt: "); bin_print(ecu_report->gps_alt, 16); SerialUSB.print(" (" + String(ecu_report->gps_alt*1.0, 1) + " m)"); SerialUSB.println();
 }
