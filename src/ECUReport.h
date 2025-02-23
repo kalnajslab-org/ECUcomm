@@ -37,7 +37,7 @@ void add_ecu_health(float v5, float v12, float v56, float board_t, ECUReport_t& 
 void add_status(bool heat_on, ECUReport_t& report);
 void add_gps(bool valid, double lat, double lon, double alt, ECUReport_t& report);
 etl::array<uint8_t, ECU_REPORT_SIZE_BYTES> ecu_report_serialize(ECUReport_t& report);
-
+ECUReport_t ecu_report_deserialize(etl::array<uint8_t, ECU_REPORT_SIZE_BYTES>& data);
 
 #endif //_ECU_REPORT_H_
 

@@ -60,6 +60,25 @@ etl::array<uint8_t, ECU_REPORT_SIZE_BYTES> ecu_report_serialize(ECUReport_t& rep
 
     return data;
 }
+ECUReport_t ecu_report_deserialize(etl::array<uint8_t, ECU_REPORT_SIZE_BYTES>& data) {
+    
+    etl::span<uint8_t> data_span(data.data(), data.size());
+    etl::bit_stream_reader reader(data_span, etl::endian::big);
+
+    ECUReport_t report;
+    report.rev = reader.read_unchecked<uint8_t>(4);
+    report.heat_on = reader.read_unchecked<uint8_t>(1);  // Heater on (bool)
+    report.v5 = reader.read_unchecked<uint16_t>(9);  // V5*100  (0-511  : 0.00V to 5.11V) 
+    report.v12 = reader.read_unchecked<uint16_t>(11);  // V12*100 (0-2047 : 0.00V to 20.47V)
+    report.v56 = reader.read_unchecked<uint16_t>(13);  // V56*100 (0-8191 : 0.00V to 81.91V)
+    report.board_t = reader.read_unchecked<uint16_t>(11);  // (Board temperature+100)*10 (0-2047 : -100.0C to 104.7C)
+    report.gps_valid = reader.read_unchecked<uint8_t>(1);  // GPS Valid (bool)
+    report.gps_lat = reader.read_unchecked<int32_t>(32);  // GPS Latitude*1e6 (degrees*1e6)
+    report.gps_lon = reader.read_unchecked<int32_t>(32);  // GPS Longitude*1e6 (degrees*1e6)
+    report.gps_alt = reader.read_unchecked<uint16_t>(16);  // GPS Altitude (meters)
+
+    return report;
+}
 
 void ecu_report_print(ECUReport_t* ecu_report)
 {
