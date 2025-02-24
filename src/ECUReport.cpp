@@ -21,6 +21,9 @@ void ecu_report_init(ECUReport_t& ecu_report)
     ecu_report.gps_lat = 0;
     ecu_report.gps_lon = 0;
     ecu_report.gps_alt = 0;
+    ecu_report.gps_sats = 0;
+    ecu_report.gps_hdop = 0;
+    ecu_report.gps_age_secs = 255;
 }
 
 void add_status(bool heat_on, ECUReport_t& report) {
@@ -34,11 +37,14 @@ void add_ecu_health(float v5, float v12, float v56, float board_t, ECUReport_t& 
     report.board_t = (uint16_t)((board_t + 100) * 10);
 }
 
-void add_gps(bool valid, double lat, double lon, double alt, ECUReport_t& report) {
+void add_gps(bool valid, double lat, double lon, double alt, uint sats, uint hdop, uint age_secs, ECUReport_t& report) {
     report.gps_valid = valid;
-    report.gps_lat = (int32_t)(lat * 1.0e6);
-    report.gps_lon = (int32_t)(lon * 1.0e6);
-    report.gps_alt = (uint16_t)alt;
+    report.gps_lat      = (int32_t)(lat * 1.0e6);
+    report.gps_lon      = (int32_t)(lon * 1.0e6);
+    report.gps_alt      = (uint16_t)alt;
+    report.gps_sats     = (sats > 31)      ? 31 : sats;
+    report.gps_hdop     = (hdop > 255)     ? 255 : hdop;
+    report.gps_age_secs = (age_secs > 255) ? 255 : age_secs;
 }
 
 etl::array<uint8_t, ECU_REPORT_SIZE_BYTES> ecu_report_serialize(ECUReport_t& report) {
@@ -57,6 +63,9 @@ etl::array<uint8_t, ECU_REPORT_SIZE_BYTES> ecu_report_serialize(ECUReport_t& rep
     writer.write_unchecked(report.gps_lat, 32);  // GPS Latitude*1e6 (degrees*1e6)
     writer.write_unchecked(report.gps_lon, 32);  // GPS Longitude*1e6 (degrees*1e6)
     writer.write_unchecked(report.gps_alt, 16);  // GPS Altitude (meters)
+    writer.write_unchecked(report.gps_sats, 5);  // Number of satellites n (0 to 31)
+    writer.write_unchecked(report.gps_hdop, 8);  // HDOP m (0 to 255) 255 = greater than 254
+    writer.write_unchecked(report.gps_age_secs, 8);  // Age of GPS data in seconds (0 to 255) 255 = greater than 254
 
     return data;
 }
@@ -76,6 +85,9 @@ ECUReport_t ecu_report_deserialize(etl::array<uint8_t, ECU_REPORT_SIZE_BYTES>& d
     report.gps_lat = reader.read_unchecked<int32_t>(32);  // GPS Latitude*1e6 (degrees*1e6)
     report.gps_lon = reader.read_unchecked<int32_t>(32);  // GPS Longitude*1e6 (degrees*1e6)
     report.gps_alt = reader.read_unchecked<uint16_t>(16);  // GPS Altitude (meters)
+    report.gps_sats = reader.read_unchecked<uint8_t>(5);  // Number of satellites n (0 to 31)
+    report.gps_hdop = reader.read_unchecked<uint8_t>(8);  // HDOP m (0 to 255) 255 = greater than 254
+    report.gps_age_secs = reader.read_unchecked<uint8_t>(8);  // Age of GPS data in seconds (0 to 255) 255 = greater than 254
 
     return report;
 }
@@ -93,4 +105,8 @@ void ecu_report_print(ECUReport_t* ecu_report)
     SerialUSB.print("gps_lat: "); bin_print(ecu_report->gps_lat, 32); SerialUSB.print(" (" + String(ecu_report->gps_lat/1.0e6, 6) + " deg)"); SerialUSB.println();
     SerialUSB.print("gps_lon: "); bin_print(ecu_report->gps_lon, 32); SerialUSB.print(" (" + String(ecu_report->gps_lon/1.0e6, 6) + " deg)"); SerialUSB.println();
     SerialUSB.print("gps_alt: "); bin_print(ecu_report->gps_alt, 16); SerialUSB.print(" (" + String(ecu_report->gps_alt*1.0, 1) + " m)"); SerialUSB.println();
+    SerialUSB.print("gps_sats: "); bin_print(ecu_report->gps_sats, 5); SerialUSB.print(" (" + String(ecu_report->gps_sats) + ")"); SerialUSB.println();
+    SerialUSB.print("gps_hdop: "); bin_print(ecu_report->gps_hdop, 8); SerialUSB.print(" (" + String(ecu_report->gps_hdop) + " m)"); SerialUSB.println();
+    SerialUSB.print("gps_age_secs: "); bin_print(ecu_report->gps_age_secs, 8); SerialUSB.print(" (" + String(ecu_report->gps_age_secs) + " s)"); SerialUSB.println();
+    SerialUSB.println();
 }
