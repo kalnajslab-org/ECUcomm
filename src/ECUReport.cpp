@@ -47,9 +47,9 @@ void add_gps(bool valid, double lat, double lon, double alt, uint sats, uint hdo
     report.gps_age_secs = (age_secs > 255) ? 255 : age_secs;
 }
 
-etl::array<uint8_t, ECU_REPORT_SIZE_BYTES> ecu_report_serialize(ECUReport_t& report) {
+ECUReportBytes_t ecu_report_serialize(ECUReport_t& report) {
 
-    etl::array<uint8_t, ECU_REPORT_SIZE_BYTES> data;
+    ECUReportBytes_t data;
     etl::span<uint8_t> data_span(data.data(), data.size());
     etl::bit_stream_writer writer(data_span, etl::endian::big);
 
@@ -69,7 +69,7 @@ etl::array<uint8_t, ECU_REPORT_SIZE_BYTES> ecu_report_serialize(ECUReport_t& rep
 
     return data;
 }
-ECUReport_t ecu_report_deserialize(etl::array<uint8_t, ECU_REPORT_SIZE_BYTES>& data) {
+ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data) {
     
     etl::span<uint8_t> data_span(data.data(), data.size());
     etl::bit_stream_reader reader(data_span, etl::endian::big);

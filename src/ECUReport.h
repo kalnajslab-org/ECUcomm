@@ -15,6 +15,11 @@
 // Round up by adding 1 byte. Perhaps there is a way to do this more elegantly with math in the #define?
 #define ECU_REPORT_SIZE_BYTES (1+ECU_REPORT_SIZE_BITS/8)
 
+// ECUReport_t defines documents/defines the data structure that will be sent over the LoRa network.
+// The data structure is defined with bitfields to establish the bit packing.
+// etl::bit_stream_writer is used to serialize the data structure into a byte array (ECUReportBytes_t).
+// etl::bit_stream_reader is used to deserialize the byte array back into the data structure.
+// *** There are several functions in ECUReport.cpp that must be editied, and exactly match the data structure defined here. ***
 struct ECUReport_t
 {
     uint8_t rev :        4;
@@ -32,13 +37,16 @@ struct ECUReport_t
     uint8_t gps_age_secs:8;  // Age of GPS data in seconds (0 to 255) 255 = greater than 254
 };
 
+// A byte array to hold the serialized ECUReport_t data structure.
+typedef etl::array<uint8_t, ECU_REPORT_SIZE_BYTES> ECUReportBytes_t;
+
 void bin_print(uint32_t n, uint8_t w=8);
 void ecu_report_init(ECUReport_t& report);
 void ecu_report_print(ECUReport_t& ecu_report);
 void add_ecu_health(float v5, float v12, float v56, float board_t, ECUReport_t& report);
 void add_status(bool heat_on, ECUReport_t& report);
 void add_gps(bool valid, double lat, double lon, double alt, uint sats, uint hdop, uint age_secs, ECUReport_t& report);
-etl::array<uint8_t, ECU_REPORT_SIZE_BYTES> ecu_report_serialize(ECUReport_t& report);
-ECUReport_t ecu_report_deserialize(etl::array<uint8_t, ECU_REPORT_SIZE_BYTES>& data);
+ECUReportBytes_t ecu_report_serialize(ECUReport_t& report);
+ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data);
 
 #endif //_ECU_REPORT_H_
