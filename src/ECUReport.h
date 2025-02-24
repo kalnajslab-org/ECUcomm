@@ -41,7 +41,7 @@ struct ECUReport_t
 typedef etl::array<uint8_t, ECU_REPORT_SIZE_BYTES> ECUReportBytes_t;
 
 void bin_print(uint32_t n, uint8_t w=8);
-void ecu_report_init(ECUReport_t& report);
+void ecu_report_init(ECUReport_t& report, bool print_bin=false);
 void ecu_report_print(ECUReport_t& ecu_report);
 void add_ecu_health(float v5, float v12, float v56, float board_t, ECUReport_t& report);
 void add_status(bool heat_on, ECUReport_t& report);
