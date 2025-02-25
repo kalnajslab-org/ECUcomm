@@ -3,7 +3,8 @@
 #include "etl/vector.h"
 
 void bin_print(uint32_t n, uint8_t w)
-{
+{   
+    SerialUSB.print(" ");
     for (int i = w-1; i >= 0; i--)
     {
         SerialUSB.print((n & (1 << i)) ? "1" : "0");
