@@ -18,7 +18,7 @@ struct BitfieldStruct
     uint16_t g : 11;
 };
 
-void bin_print(uint32_t n, uint8_t w=8)
+void ecu_bin_print(uint32_t n, uint8_t w=8)
 {
     for (int i = w-1; i >= 0; i--)
     {
@@ -42,13 +42,13 @@ void setup()
     test_write.g = 0b10000000001;
 
     SerialUSB.println("\nWrite values:");
-    SerialUSB.print("a: "); bin_print(test_write.a, 4); SerialUSB.println();
-    SerialUSB.print("b: "); bin_print(test_write.b, 2); SerialUSB.println();
-    SerialUSB.print("c: "); bin_print(test_write.c, 1); SerialUSB.println();
-    SerialUSB.print("d: "); bin_print(test_write.d, 13); SerialUSB.println();
-    SerialUSB.print("e: "); bin_print(test_write.e, 32); SerialUSB.print(" (" + String(test_write.e/1.0e6, 9) + ")"); SerialUSB.println();
-    SerialUSB.print("f: "); bin_print(test_write.f, 3); SerialUSB.println();
-    SerialUSB.print("g: "); bin_print(test_write.g, 11); SerialUSB.println();
+    SerialUSB.print("a: "); ecu_bin_print(test_write.a, 4); SerialUSB.println();
+    SerialUSB.print("b: "); ecu_bin_print(test_write.b, 2); SerialUSB.println();
+    SerialUSB.print("c: "); ecu_bin_print(test_write.c, 1); SerialUSB.println();
+    SerialUSB.print("d: "); ecu_bin_print(test_write.d, 13); SerialUSB.println();
+    SerialUSB.print("e: "); ecu_bin_print(test_write.e, 32); SerialUSB.print(" (" + String(test_write.e/1.0e6, 9) + ")"); SerialUSB.println();
+    SerialUSB.print("f: "); ecu_bin_print(test_write.f, 3); SerialUSB.println();
+    SerialUSB.print("g: "); ecu_bin_print(test_write.g, 11); SerialUSB.println();
     SerialUSB.println();
 
     // Create the write buffer
@@ -68,7 +68,7 @@ void setup()
 
     for (size_t i = 0; i < write_buffer.size(); ++i)
     {
-        bin_print(write_buffer[i]);
+        ecu_bin_print(write_buffer[i]);
         SerialUSB.print(" ");
     }
     SerialUSB.println();
@@ -90,13 +90,13 @@ void setup()
     test_read.g = bit_stream_reader.read_unchecked<uint16_t>(11);
 
     SerialUSB.println("Read values:");
-    SerialUSB.print("a: "); bin_print(test_read.a, 4); SerialUSB.println();
-    SerialUSB.print("b: "); bin_print(test_read.b, 2); SerialUSB.println();
-    SerialUSB.print("c: "); bin_print(test_read.c, 1); SerialUSB.println();
-    SerialUSB.print("d: "); bin_print(test_read.d, 13); SerialUSB.println();
-    SerialUSB.print("e: "); bin_print(test_read.e, 32); SerialUSB.print(" (" + String(test_read.e/1.0e6, 9) + ")"); SerialUSB.println();
-    SerialUSB.print("f: "); bin_print(test_read.f, 3); SerialUSB.println();
-    SerialUSB.print("g: "); bin_print(test_read.g, 11); SerialUSB.println();
+    SerialUSB.print("a: "); ecu_bin_print(test_read.a, 4); SerialUSB.println();
+    SerialUSB.print("b: "); ecu_bin_print(test_read.b, 2); SerialUSB.println();
+    SerialUSB.print("c: "); ecu_bin_print(test_read.c, 1); SerialUSB.println();
+    SerialUSB.print("d: "); ecu_bin_print(test_read.d, 13); SerialUSB.println();
+    SerialUSB.print("e: "); ecu_bin_print(test_read.e, 32); SerialUSB.print(" (" + String(test_read.e/1.0e6, 9) + ")"); SerialUSB.println();
+    SerialUSB.print("f: "); ecu_bin_print(test_read.f, 3); SerialUSB.println();
+    SerialUSB.print("g: "); ecu_bin_print(test_read.g, 11); SerialUSB.println();
 
 }
 
