@@ -9,9 +9,9 @@
 
 #define ECU_REPORT_REV 1
 
-#define ECU_REPORT_SIZE_BITS (4+1+9+11+13+11+1+32+32+16+5+8+8+14+10+8+17+1)
-// 4+1+9+11+13+11+1+32+32+16+5+8+8+14+10+8+17+1 = 201 bits
-// 201 bits / 8 bits/byte = 25.125 bytes
+#define ECU_REPORT_SIZE_BITS (4+1+9+11+13+11+1+32+32+16+5+8+8+1+14+10+8+17+1)
+// 4+1+9+11+13+11+1+32+32+16+5+8+8+1+14+10+8+17+1 = 202 bits
+// 202 bits / 8 bits/byte = 25.25 bytes
 // Round up by adding 1 byte. Perhaps there is a way to do this more elegantly with math in the #define?
 #define ECU_REPORT_SIZE_BYTES (1+ECU_REPORT_SIZE_BITS/8)
 
@@ -35,6 +35,7 @@ struct ECUReport_t
     uint8_t  gps_sats:    5;  // Number of satellites n (0 to 31)
     uint8_t  gps_hdop:    8;  // HDOP m (0 to 255) 255 = greater than 254
     uint8_t  gps_age_secs:8;  // Age of GPS data in seconds (0 to 255) 255 = greater than 254
+    uint8_t  rs41_valid:  1;  // RS41 data valid (bool)
     uint16_t rs41_airt : 14;  // (RS41 Air Temperature+100)*100 (0-16383 : -100.00C to 63.83C) 
     uint16_t rs41_hum:   10;  // RS41 Humidity*10 (0-1023 : 0.0% to 102.3%)
     uint8_t  rs41_hst:    8;  // RS41 Humidity Sensor Temperature+100 (0-255 : -100C to 125C)
@@ -49,7 +50,7 @@ void ecu_report_init(ECUReport_t& report);
 void add_ecu_health(float v5, float v12, float v56, float board_t, ECUReport_t& report);
 void add_status(bool heat_on, ECUReport_t& report);
 void add_gps(bool valid, double lat, double lon, double alt, uint sats, uint hdop, uint age_secs, ECUReport_t& report);
-void add_rs41(float airt, float hum, float hst, float pres, bool pcb_h, ECUReport_t& report);
+void add_rs41(bool valid, float airt, float hum, float hst, float pres, bool pcb_h, ECUReport_t& report);
 ECUReportBytes_t ecu_report_serialize(ECUReport_t& report);
 ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data);
 void ecu_report_print(ECUReport_t& ecu_report, bool print_bin=false);

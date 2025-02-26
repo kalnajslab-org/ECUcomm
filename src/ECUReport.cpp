@@ -26,6 +26,7 @@ void ecu_report_init(ECUReport_t& ecu_report)
     ecu_report.gps_hdop = 0;
     ecu_report.gps_age_secs = 255;
     ecu_report.board_t = 0;
+    ecu_report.rs41_valid = 0;
     ecu_report.rs41_airt = 0;
     ecu_report.rs41_hum = 0;
     ecu_report.rs41_hst = 0;
@@ -54,7 +55,9 @@ void add_gps(bool valid, double lat, double lon, double alt, uint sats, uint hdo
     report.gps_age_secs = (age_secs > 255) ? 255 : age_secs;
 }
 
-void add_rs41(float airt, float hum, float hst, float pres, bool pcb_h, ECUReport_t& report) {
+void add_rs41(bool valid, float airt, float hum, float hst, float pres, bool pcb_h, ECUReport_t& report) {
+    report.rs41_valid = valid;
+
     if (airt < -100.0) {
         report.rs41_airt = 0;
     } else if (airt > 63.83) {
@@ -109,6 +112,7 @@ ECUReportBytes_t ecu_report_serialize(ECUReport_t& report) {
     writer.write_unchecked(report.gps_sats,     5);
     writer.write_unchecked(report.gps_hdop,     8);
     writer.write_unchecked(report.gps_age_secs, 8);
+    writer.write_unchecked(report.rs41_valid,   1);
     writer.write_unchecked(report.rs41_airt,   14);
     writer.write_unchecked(report.rs41_hum,    10);
     writer.write_unchecked(report.rs41_hst,     8);
@@ -136,6 +140,7 @@ ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data) {
     report.gps_sats = reader.read_unchecked<uint8_t>    (5); // Number of satellites n (0 to 31)
     report.gps_hdop = reader.read_unchecked<uint8_t>    (8); // HDOP m (0 to 255) 255 = greater than 254
     report.gps_age_secs = reader.read_unchecked<uint8_t>(8); // Age of GPS data in seconds (0 to 255) 255 = greater than 254
+    report.rs41_valid = reader.read_unchecked<uint8_t>  (1); // RS41 data valid (bool)
     report.rs41_airt = reader.read_unchecked<uint16_t> (14); // (RS41 Air Temperature+100)*100 (0-16383 : -100.00C to 63.83C)
     report.rs41_hum = reader.read_unchecked<uint16_t>  (10); // RS41 Humidity*10 (0-1023 : 0.0% to 102.3%)
     report.rs41_hst = reader.read_unchecked<uint8_t>    (8); // RS41 Humidity Sensor Temperature+100 (0-255 : -100C to 125C)
@@ -161,6 +166,7 @@ void ecu_report_print(ECUReport_t& ecu_report, bool print_bin=false)
     SerialUSB.print("gps_sats: "); if (print_bin) ecu_bin_print(ecu_report.gps_sats,         5); SerialUSB.print(String(ecu_report.gps_sats)); SerialUSB.println();
     SerialUSB.print("gps_hdop: "); if (print_bin) ecu_bin_print(ecu_report.gps_hdop,         8); SerialUSB.print(String(ecu_report.gps_hdop) + "m"); SerialUSB.println();
     SerialUSB.print("gps_age_secs: "); if (print_bin) ecu_bin_print(ecu_report.gps_age_secs, 8); SerialUSB.print(String(ecu_report.gps_age_secs) + "s"); SerialUSB.println();
+    SerialUSB.print("rs41_valid: "); if (print_bin) ecu_bin_print(ecu_report.rs41_valid,     1); SerialUSB.print(ecu_report.rs41_valid?"True":"False"); SerialUSB.println();
     SerialUSB.print("rs41_airt: "); if (print_bin) ecu_bin_print(ecu_report.rs41_airt,      14); SerialUSB.print(String((ecu_report.rs41_airt/100.0)-100.0, 2) + "degC"); SerialUSB.println();
     SerialUSB.print("rs41_hum: "); if (print_bin) ecu_bin_print(ecu_report.rs41_hum,        10); SerialUSB.print(String(ecu_report.rs41_hum/10.0, 1) + "%"); SerialUSB.println();
     SerialUSB.print("rs41_hst: "); if (print_bin) ecu_bin_print(ecu_report.rs41_hst,         8); SerialUSB.print(String((ecu_report.rs41_hst/1.0)-100.0, 1) + "degC"); SerialUSB.println();
