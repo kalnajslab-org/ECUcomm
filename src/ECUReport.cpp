@@ -13,6 +13,7 @@ void ecu_bin_print(uint32_t n, uint8_t w)
 
 void ecu_report_init(ECUReport_t& ecu_report)
 {
+    // *** Modify this function whenever the ECUReport_t struct is modified ***
     ecu_report.rev = ECU_REPORT_REV;
     ecu_report.heat_on = 0;
     ecu_report.v5 = 0;
@@ -32,6 +33,9 @@ void ecu_report_init(ECUReport_t& ecu_report)
     ecu_report.rs41_hst = 0;
     ecu_report.rs41_pres = 0;
     ecu_report.rs41_pcb_h = 0;
+    ecu_report.tsen_airt = 0;
+    ecu_report.tsen_ptemp = 0;
+    ecu_report.tsen_pres = 0;
 }
 
 void add_status(bool heat_on, ECUReport_t& report) {
@@ -93,7 +97,29 @@ void add_rs41(bool valid, float airt, float hum, float hst, float pres, bool pcb
     report.rs41_pcb_h = pcb_h;
 }
 
+void add_tsen(uint16_t airt, uint32_t prest, uint32_t pres, ECUReport_t& report) {
+    if (airt <0x10000) {
+        report.tsen_airt = airt;
+    } else {
+        report.tsen_airt = 0xFFF;  // Error    
+    }
+
+    if (prest < 0x1000000) {
+        report.tsen_ptemp = prest;
+    } else {
+        report.tsen_ptemp = 0xFFFFFF;  // Error
+    }
+
+    if (pres < 0x1000000) {
+        report.tsen_pres = pres;
+    } else {
+        report.tsen_pres = 0xFFFFFF;  // Error
+    }
+}
+
 ECUReportBytes_t ecu_report_serialize(ECUReport_t& report) {
+
+    // *** Modify this function whenever the ECUReport_t struct is modified ***
 
     ECUReportBytes_t data;
     etl::span<uint8_t> data_span(data.data(), data.size());
@@ -118,11 +144,16 @@ ECUReportBytes_t ecu_report_serialize(ECUReport_t& report) {
     writer.write_unchecked(report.rs41_hst,     8);
     writer.write_unchecked(report.rs41_pres,   17);
     writer.write_unchecked(report.rs41_pcb_h,   1);
+    writer.write_unchecked(report.tsen_airt,   12);
+    writer.write_unchecked(report.tsen_ptemp,  24);
+    writer.write_unchecked(report.tsen_pres,   24);
 
     return data;
 }
 ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data) {
     
+    // *** Modify this function whenever the ECUReport_t struct is modified ***
+
     etl::span<uint8_t> data_span(data.data(), data.size());
     etl::bit_stream_reader reader(data_span, etl::endian::big);
 
@@ -146,12 +177,18 @@ ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data) {
     report.rs41_hst = reader.read_unchecked<uint8_t>    (8); // RS41 Humidity Sensor Temperature+100 (0-255 : -100C to 125C)
     report.rs41_pres = reader.read_unchecked<uint32_t> (17); // RS41 Pressure*100 (0-131071 : 0.0hPa to 1310.71hPa) (should we do log10?)
     report.rs41_pcb_h = reader.read_unchecked<uint8_t>  (1); // RS41 PCB Heater On (bool)
+    report.tsen_airt = reader.read_unchecked<uint16_t> (12); // Raw
+    report.tsen_ptemp = reader.read_unchecked<uint32_t>(24); // Raw
+    report.tsen_pres = reader.read_unchecked<uint32_t> (24); // Raw
 
     return report;
 }
 
 void ecu_report_print(ECUReport_t& ecu_report, bool print_bin=false)
 {
+
+    // *** Modify this function whenever the ECUReport_t struct is modified ***
+
     SerialUSB.println("ECU Report:");
     SerialUSB.print("rev: "); if (print_bin) ecu_bin_print(ecu_report.rev,                   4); SerialUSB.print(String(ecu_report.rev)); SerialUSB.println();
     SerialUSB.print("heat_on: "); if (print_bin) ecu_bin_print(ecu_report.heat_on,           1); SerialUSB.print(ecu_report.heat_on?"True":"False"); SerialUSB.println();
@@ -172,4 +209,7 @@ void ecu_report_print(ECUReport_t& ecu_report, bool print_bin=false)
     SerialUSB.print("rs41_hst: "); if (print_bin) ecu_bin_print(ecu_report.rs41_hst,         8); SerialUSB.print(String((ecu_report.rs41_hst/1.0)-100.0, 1) + "degC"); SerialUSB.println();
     SerialUSB.print("rs41_pres: "); if (print_bin) ecu_bin_print(ecu_report.rs41_pres,      17); SerialUSB.print(String(ecu_report.rs41_pres/100.0, 2) + "hPa"); SerialUSB.println();
     SerialUSB.print("rs41_pcb_h: "); if (print_bin) ecu_bin_print(ecu_report.rs41_pcb_h,     1); SerialUSB.print(ecu_report.rs41_pcb_h?"True":"False"); SerialUSB.println();
+    SerialUSB.print("tsen_airt: "); if (print_bin) ecu_bin_print(ecu_report.tsen_airt,      12); SerialUSB.print(ecu_report.tsen_airt, HEX); SerialUSB.println();
+    SerialUSB.print("tsen_ptemp: "); if (print_bin) ecu_bin_print(ecu_report.tsen_ptemp,    24); SerialUSB.print(ecu_report.tsen_ptemp, HEX); SerialUSB.println();
+    SerialUSB.print("tsen_pres: "); if (print_bin) ecu_bin_print(ecu_report.tsen_pres,      24); SerialUSB.print(ecu_report.tsen_pres,HEX); SerialUSB.println();
 }
