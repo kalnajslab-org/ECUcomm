@@ -184,7 +184,7 @@ ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data) {
     return report;
 }
 
-void ecu_report_print(ECUReport_t& ecu_report, bool print_bin=false)
+void ecu_report_print(ECUReport_t& ecu_report, bool print_bin)
 {
 
     // *** Modify this function whenever the ECUReport_t struct is modified ***
