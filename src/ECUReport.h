@@ -9,11 +9,12 @@
 
 #define ECU_REPORT_REV 1
 
-// *** There are several functions in ECUReport.cpp that must be modified whenever , 
-//     and they must exactly match the data structure defined here. ***
+// *** NOTE: There are several functions in ECUReport.cpp that must be updated whenever 
+// the report is modified, and they must exactly match the data structure defined here. 
+// Don't forget to check the data types (uint16_t, etc.) as well as the bitfield sizes ***
 
 // The ECUReport_t defines the ECU data fields that will be sent over the LoRa network.
-// NOTE THAT AN INSTANTATION OF THIS STRUCTURE DOES NOT CONTAIN BIT-PACKED DATA. THE MEMORY
+// AN INSTANTATION OF THIS STRUCTURE DOES NOT CONTAIN BIT-PACKED DATA. THE MEMORY
 // ALLOCATION OF C BITFIELDS IS COMPLETELY DEPENDENT ON THE COMPILER. THIS STRUCTURE IS USED
 // JUST TO DEFINE THE FIELDS AND THEIR SIZES. THE ACTUAL BIT-(UN)/PACKING IS DONE IN 
 // ecu_report_serialize() and ecu_report_deserialize().
@@ -36,9 +37,7 @@
 
 // ECUReport_t defines documents/defines the data structure that will be sent over the LoRa network.
 // The data structure is defined with bitfields to establish the bit packing.
-// etl::bit_stream_writer is used to serialize the data structure into a byte array (ECUReportBytes_t).
-// etl::bit_stream_reader is used to deserialize the byte array back into the data structure.
-// *** There are several functions in ECUReport.cpp that must be editied, and exactly match the data structure defined here. ***
+// In compliance with C bitfield rules, the bitfield type must be large enough to hold the bitfield.
 struct ECUReport_t
 {
     uint8_t  rev :       4;
@@ -66,17 +65,32 @@ struct ECUReport_t
 };
 
 // A byte array to hold the serialized ECUReport_t data structure.
+// etl::bit_stream_writer is used to serialize ECUReport_t into ECUReportBytes_t.
+// etl::bit_stream_reader is used to deserialize ECUReportBytes_t into ECUReport_t.
 typedef etl::array<uint8_t, ECU_REPORT_SIZE_BYTES> ECUReportBytes_t;
 
+// Initialize all fields in an ECUReport_t.
 void ecu_report_init(ECUReport_t& report);
+// Add ECU health to an ECUReport_t.
 void add_ecu_health(float v5, float v12, float v56, float board_t, ECUReport_t& report);
+// Add statuses to an ECUReport_t.
 void add_status(bool heat_on, ECUReport_t& report);
+// Add GPS data to an ECUReport_t.
 void add_gps(bool valid, double lat, double lon, double alt, uint sats, uint hdop, uint age_secs, ECUReport_t& report);
+// Add RS41 data to an ECUReport_t.
 void add_rs41(bool valid, float airt, float hum, float hst, float pres, bool pcb_h, ECUReport_t& report);
+// Add TSEN data to an ECUReport_t.
 void add_tsen(uint16_t airt, uint32_t prest, uint32_t pres, ECUReport_t& report);
+// Serialize an ECUReport_t.
 ECUReportBytes_t ecu_report_serialize(ECUReport_t& report);
+// Deserialize an ECUReportBytes_t.
 ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data);
+// Print an ECUReport_t.
+// If print_bin is true, the binary representation of the report will be included in the print.
 void ecu_report_print(ECUReport_t& ecu_report, bool print_bin=false);
+// Print a uint32_t in binary, with zero fill.
+// n is the number to print.
+// w is the number of bits to print.
 void ecu_bin_print(uint32_t n, uint8_t w=8);
 
 #endif //_ECU_REPORT_H_
