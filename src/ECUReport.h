@@ -27,12 +27,11 @@
 
 // Since we don't have an automatic method to determine the number of bits in the struct,
 // we have to define it here.
-// *** Modify ECU_REPORT_SIZE_BITS is modified ***
-#define ECU_REPORT_SIZE_BITS (4+1+9+11+13+11+1+32+32+16+5+8+8+1+14+10+8+17+1+12+24+24)
-// 4+1+9+11+13+11+1+32+32+16+5+8+8+1+14+10+8+17+1+12+24+24
-// 4+1+9+11+13+11+1+32+32+16+5+8+8+1+14+10+8+17+1 = 262 bits
-// 262 bits / 8 bits/byte = 32.75 bytes
-// Round up by adding 1 byte. Perhaps there is a way to do this more elegantly with math in the #define?
+// *** Correct ECU_REPORT_SIZE_BITS when ECUReport_t is modified ***
+// (Use copliot to create this sum by by propmting: "sum of bitfield sizes in ECUReport_t")
+#define ECU_REPORT_SIZE_BITS (4 + 1 + 9 + 11 + 13 + 11 + 8 + 1 + 32 + 32 + 16 + 5 + 32 + 32 + 8 + 1 + 14 + 10 + 8 + 17 + 1 + 12 + 24 + 24)
+// Total bits: 337 bits = 42.125 bytes
+// Round up to full byte adding 1. Perhaps there is a way to do this more elegantly with math in the #define?
 #define ECU_REPORT_SIZE_BYTES (1+ECU_REPORT_SIZE_BITS/8)
 
 // ECUReport_t defines documents/defines the data structure that will be sent over the LoRa network.
@@ -40,18 +39,20 @@
 // In compliance with C bitfield rules, the bitfield type must be large enough to hold the bitfield.
 struct ECUReport_t
 {
-    uint8_t  rev :       4;
-    uint8_t  heat_on :   1;  // Heater on (bool)
-    uint16_t v5 :        9;  // V5*100  (0-511  : 0.00V to 5.11V)
-    uint16_t v12 :      11;  // V12*100 (0-2047 : 0.00V to 20.47V)
-    uint16_t v56 :      13;  // V56*100 (0-8191 : 0.00V to 81.91V)
-    uint16_t board_t :  11;  // (Board temperature+100)*10 (0-2047 : -100.0C to 104.8C)
-    uint8_t  gps_valid : 1;  // GPS Valid (bool)
+    uint8_t  rev :        4;
+    uint8_t  heat_on :    1;  // Heater on (bool)
+    uint16_t v5 :         9;  // V5*100  (0-511  : 0.00V to 5.11V)
+    uint16_t v12 :       11;  // V12*100 (0-2047 : 0.00V to 20.47V)
+    uint16_t v56 :       13;  // V56*100 (0-8191 : 0.00V to 81.91V)
+    uint16_t board_t :   11;  // (Board temperature+100)*10 (0-2047 : -100.0C to 104.8C)
+    uint8_t  switch_mA :  8;  // Switch current (mA): (0ma - 255mA)
+    uint8_t  gps_valid :  1;  // GPS Valid (bool)
     int32_t  gps_lat :   32;  // GPS Latitude*1e6 (degrees*1e6)
     int32_t  gps_lon :   32;  // GPS Longitude*1e6 (degrees*1e6)
     uint16_t gps_alt:    16;  // GPS Altitude (meters)
     uint8_t  gps_sats:    5;  // Number of satellites n (0 to 31)
-    uint8_t  gps_hdop:    8;  // HDOP m (0 to 255) 255 = greater than 254
+    uint32_t gps_date:   32;  // GPS Date (YYYYMMDD)
+    uint32_t gps_time:   32;  // GPS Time (HHMMSS)
     uint8_t  gps_age_secs:8;  // Age of GPS data in seconds (0 to 255) 255 = greater than 254
     uint8_t  rs41_valid:  1;  // RS41 data valid (bool)
     uint16_t rs41_airt : 14;  // (RS41 Air Temperature+100)*100 (0-16383 : -100.00C to 63.83C) 
@@ -72,11 +73,11 @@ typedef etl::array<uint8_t, ECU_REPORT_SIZE_BYTES> ECUReportBytes_t;
 // Initialize all fields in an ECUReport_t.
 void ecu_report_init(ECUReport_t& report);
 // Add ECU health to an ECUReport_t.
-void add_ecu_health(float v5, float v12, float v56, float board_t, ECUReport_t& report);
+void add_ecu_health(float v5, float v12, float v56, float board_t, float switch_mA, ECUReport_t& report);
 // Add statuses to an ECUReport_t.
 void add_status(bool heat_on, ECUReport_t& report);
 // Add GPS data to an ECUReport_t.
-void add_gps(bool valid, double lat, double lon, double alt, uint sats, uint hdop, uint age_secs, ECUReport_t& report);
+void add_gps(bool valid, double lat, double lon, double alt, uint sats, uint32_t date, uint32_t time, uint age_secs, ECUReport_t& report);
 // Add RS41 data to an ECUReport_t.
 void add_rs41(bool valid, float airt, float hum, float hst, float pres, bool pcb_h, ECUReport_t& report);
 // Add TSEN data to an ECUReport_t.
