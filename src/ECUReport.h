@@ -29,8 +29,8 @@
 // we have to define it here.
 // *** Correct ECU_REPORT_SIZE_BITS when ECUReport_t is modified ***
 // (Use copliot to create this sum by by propmting: "sum of bitfield sizes in ECUReport_t")
-#define ECU_REPORT_SIZE_BITS (4 + 1 + 9 + 11 + 13 + 11 + 8 + 1 + 32 + 32 + 16 + 5 + 32 + 32 + 8 + 1 + 14 + 10 + 8 + 17 + 1 + 12 + 24 + 24)
-// Total bits: 337 bits = 42.125 bytes
+#define ECU_REPORT_SIZE_BITS (4 + 1 + 9 + 11 + 13 + 11 + 8 + 1 + 32 + 32 + 16 + 5 + 17 + 25 + 8 + 1 + 14 + 10 + 8 + 17 + 1 + 12 + 24 + 24)
+// Total bits: 304 bits = 38 bytes
 // Round up to full byte adding 1. Perhaps there is a way to do this more elegantly with math in the #define?
 #define ECU_REPORT_SIZE_BYTES (1+ECU_REPORT_SIZE_BITS/8)
 
@@ -51,8 +51,8 @@ struct ECUReport_t
     int32_t  gps_lon :   32;  // GPS Longitude*1e6 (degrees*1e6)
     uint16_t gps_alt:    16;  // GPS Altitude (meters)
     uint8_t  gps_sats:    5;  // Number of satellites n (0 to 31)
-    uint32_t gps_date:   32;  // GPS Date (YYYYMMDD)
-    uint32_t gps_time:   32;  // GPS Time (HHMMSS)
+    uint32_t gps_date:   17;  // GPS Date (MMDDYY - Year is 20YY)
+    uint32_t gps_time:   25;  // GPS Time (HHMMSSSS - Seconds are in 100ths)
     uint8_t  gps_age_secs:8;  // Age of GPS data in seconds (0 to 255) 255 = greater than 254
     uint8_t  rs41_valid:  1;  // RS41 data valid (bool)
     uint16_t rs41_airt : 14;  // (RS41 Air Temperature+100)*100 (0-16383 : -100.00C to 63.83C) 

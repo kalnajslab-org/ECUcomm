@@ -141,8 +141,8 @@ ECUReportBytes_t ecu_report_serialize(ECUReport_t& report) {
     writer.write_unchecked(report.gps_lon,     32);
     writer.write_unchecked(report.gps_alt,     16);
     writer.write_unchecked(report.gps_sats,     5);
-    writer.write_unchecked(report.gps_date,    32);
-    writer.write_unchecked(report.gps_time,    32);
+    writer.write_unchecked(report.gps_date,    17);
+    writer.write_unchecked(report.gps_time,    25);
     writer.write_unchecked(report.gps_age_secs, 8);
     writer.write_unchecked(report.rs41_valid,   1);
     writer.write_unchecked(report.rs41_airt,   14);
@@ -176,8 +176,8 @@ ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data) {
     report.gps_lon = reader.read_unchecked<int32_t>    (32); // GPS Longitude*1e6 (degrees*1e6)
     report.gps_alt = reader.read_unchecked<uint16_t>   (16); // GPS Altitude (meters)
     report.gps_sats = reader.read_unchecked<uint8_t>    (5); // Number of satellites n (0 to 31)
-    report.gps_date = reader.read_unchecked<uint32_t>  (32); // GPS Date (YYYYMMDD)
-    report.gps_time = reader.read_unchecked<uint32_t>  (32); // GPS Time (HHMMSS)
+    report.gps_date = reader.read_unchecked<uint32_t>  (17); // GPS Date (MMDDYY - Year is 20YY)
+    report.gps_time = reader.read_unchecked<uint32_t>  (25); // GPS Time (HHMMSSSS - Seconds are in 100ths)
     report.gps_age_secs = reader.read_unchecked<uint8_t>(8); // Age of GPS data in seconds (0 to 255) 255 = greater than 254
     report.rs41_valid = reader.read_unchecked<uint8_t>  (1); // RS41 data valid (bool)
     report.rs41_airt = reader.read_unchecked<uint16_t> (14); // (RS41 Air Temperature+100)*100 (0-16383 : -100.00C to 63.83C)
@@ -210,8 +210,8 @@ void ecu_report_print(ECUReport_t& ecu_report, bool print_bin)
     SerialUSB.print("gps_lon: "); if (print_bin) ecu_bin_print(ecu_report.gps_lon,          32); SerialUSB.print(String(ecu_report.gps_lon/1.0e6, 6) + "deg"); SerialUSB.println();
     SerialUSB.print("gps_alt: "); if (print_bin) ecu_bin_print(ecu_report.gps_alt,          16); SerialUSB.print(String(ecu_report.gps_alt*1.0, 1) + "m"); SerialUSB.println();
     SerialUSB.print("gps_sats: "); if (print_bin) ecu_bin_print(ecu_report.gps_sats,         5); SerialUSB.print(String(ecu_report.gps_sats)); SerialUSB.println();
-    SerialUSB.print("gps_date: "); if (print_bin) ecu_bin_print(ecu_report.gps_date,        32); SerialUSB.print(String(ecu_report.gps_date)); SerialUSB.println();
-    SerialUSB.print("gps_time: "); if (print_bin) ecu_bin_print(ecu_report.gps_time,        32); SerialUSB.print(String(ecu_report.gps_time)); SerialUSB.println();
+    SerialUSB.print("gps_date: "); if (print_bin) ecu_bin_print(ecu_report.gps_date,        17); SerialUSB.print(String(ecu_report.gps_date)); SerialUSB.println();
+    SerialUSB.print("gps_time: "); if (print_bin) ecu_bin_print(ecu_report.gps_time,        25); SerialUSB.print(String(ecu_report.gps_time)); SerialUSB.println();
     SerialUSB.print("gps_age_secs: "); if (print_bin) ecu_bin_print(ecu_report.gps_age_secs, 8); SerialUSB.print(String(ecu_report.gps_age_secs) + "s"); SerialUSB.println();
     SerialUSB.print("rs41_valid: "); if (print_bin) ecu_bin_print(ecu_report.rs41_valid,     1); SerialUSB.print(ecu_report.rs41_valid?"True":"False"); SerialUSB.println();
     SerialUSB.print("rs41_airt: "); if (print_bin) ecu_bin_print(ecu_report.rs41_airt,      14); SerialUSB.print(String((ecu_report.rs41_airt/100.0)-100.0, 2) + "degC"); SerialUSB.println();
