@@ -9,7 +9,7 @@ volatile bool rx_ready = false;
 volatile ECULoRaPacket_t rx_lora_packet;
 
 // Set true when a message is in tx_lora_packet and ready to be send
-volatile bool tx_ready = false;
+volatile bool tx_queued = false;
 // The packet to be sent.
 volatile ECULoRaPacket_t tx_lora_packet;
 
@@ -103,10 +103,10 @@ void rxReadyISR(int packetSize)
     recvd_msg_count++;
 
     // Send a queued tx packet now.
-    if (tx_ready)
+    if (tx_queued)
     {
         ecu_lora_tx_now();
-        tx_ready = false;
+        tx_queued = false;
     }
 }
 
@@ -140,7 +140,7 @@ bool ecu_lora_tx(uint8_t *data, uint8_t len)
     {
         // Save the packet, to be sent from the rxReadyISR().
 
-        // *** Disable interrupts while we access tx_ready and tx_lora_packet.
+        // *** Disable interrupts while we access tx_queued and tx_lora_packet.
         noInterrupts();
 
         tx_lora_packet.id = sent_msg_count;
@@ -149,7 +149,7 @@ bool ecu_lora_tx(uint8_t *data, uint8_t len)
         {
             tx_lora_packet.data[i] = data[i];
         }
-        tx_ready = true;
+        tx_queued = true;
 
         // *** Re-enable interrupts.
         interrupts();
