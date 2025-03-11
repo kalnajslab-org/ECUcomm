@@ -134,8 +134,21 @@ bool ecu_lora_tx_now()
     return status;
 }
 
-bool ecu_lora_tx(uint8_t *data, uint8_t len)
+bool ecu_lora_tx(uint8_t *data, uint8_t len, bool immediate)
 {
+    if (immediate)
+    {
+
+        tx_lora_packet.id = sent_msg_count;
+        tx_lora_packet.data_len = len;
+        for (uint8_t i = 0; i < len && i < ECU_LORA_DATA_BUFSIZE; i++)
+        {
+            tx_lora_packet.data[i] = data[i];
+        }
+        ecu_lora_tx_now();
+        return true;
+    }
+
     if (ecu_lora_mode == LORA_FOLLOWER)
     {
         // Save the packet, to be sent from the rxReadyISR().
