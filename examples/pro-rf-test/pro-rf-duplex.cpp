@@ -13,6 +13,8 @@ ECULoRaMode_t my_ecu_lora_mode = LORA_FREERUN;
 #endif
 #endif
 #endif
+// Define ECUCOMMLEADER && ECUCOMMNOTX to just receive messages.
+// Only useful for debugging.
 
 // Status LED on pin 13
 int LED = 13;
@@ -40,6 +42,9 @@ void setup()
 
     SerialUSB.println(String(__FILE__) + " build:" + __DATE__ + " " + __TIME__);
     SerialUSB.println(ecu_lora_mode_names[my_ecu_lora_mode] + " Frequency:" + FREQUENCY + " BW:" + BANDWIDTH + " SF:" + SF + " Interval:" + SEND_INTERVAL_MS);
+#ifdef ECUCOMMNOTX
+    SerialUSB.println("ECUCOMMNOTX defined. No transmissions will be made.");
+#endif
 
     if (!ECULoRaInit(
             my_ecu_lora_mode,
@@ -73,8 +78,10 @@ void loop()
     // when the interval has passed.
     if (my_ecu_lora_mode == LORA_LEADER || (millis() - lastSendTime > interval))
     {
-        //        SerialUSB.println("interval:"+String(interval));
+#ifndef ECUCOMMNOTX
+        // Send the message only if LoRa transmitting is enabled. 
         ecu_lora_tx(toSend, MSG_LEN);
+#endif
         lastSendTime = millis();
         if (my_ecu_lora_mode == LORA_FREERUN)
         {

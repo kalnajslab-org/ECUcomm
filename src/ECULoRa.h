@@ -99,13 +99,15 @@ bool ECULoRaInit(
 // If true, the message is copied to the msg structure.
 extern bool ecu_lora_rx(ECULoRaMsg_t* msg);
 
-// Send a message. It will either be sent immediately,
-// or queued to be sent after the next received message.
-// It will not be sent if in leader mode and the last message was sent too recently.
+// Send a message. 
+// In LEADER mode, if the last message send time was older than the interval, send the message.
+// In FOLLOWER mode, queue the message to be sent after reception of a message.
+// In FREERUN mode, send the message immediately.
 // data: the data to send
 // len: the length of the data
+// immediate: if true, send the message immediately regardless of mode.
 // Returns true if the message was queued or sent.
-extern bool ecu_lora_tx(uint8_t* data, uint8_t len);
+extern bool ecu_lora_tx(uint8_t* data, uint8_t len, bool immediate = false);
 
 // Get the RSSI of the last received message.
 extern int ecu_lora_rssi();
