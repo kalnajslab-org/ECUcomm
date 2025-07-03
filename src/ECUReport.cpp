@@ -47,12 +47,13 @@ void add_status(bool heat_on, uint8_t temp_setpoint, ECUReport_t& report) {
     report.heat_on = heat_on;
 }
 
-void add_ecu_health(float v5, float v12, float v56, float board_t, float switch_mA, ECUReport_t& report) {
+void add_ecu_health(float v5, float v12, float v56, float board_t, float switch_mA, float cpu_temp, ECUReport_t& report) {
     report.v5 = v5 * 100;
     report.v12 = v12 * 100;
     report.v56 = v56 * 100;
     report.board_t = (board_t + 100) * 10;
     report.switch_mA = (switch_mA <= 255) ? switch_mA : 255;
+    report.cpu_temp = (cpu_temp + 100) * 10;
 }
 
 void add_gps(bool valid, double lat, double lon, double alt, uint sats, uint32_t date, uint32_t time, uint age_secs, ECUReport_t& report) {
