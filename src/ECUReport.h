@@ -7,7 +7,7 @@
 
 #include "etl/array.h"
 
-#define ECU_REPORT_REV 2
+#define ECU_REPORT_REV 3
 
 // *** NOTE: There are several functions in ECUReport.cpp that must be updated whenever 
 // the report is modified, and they must exactly match the data structure defined here. 
