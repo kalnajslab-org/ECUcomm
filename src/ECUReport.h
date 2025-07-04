@@ -28,9 +28,10 @@
 // Since we don't have an automatic method to determine the number of bits in the struct,
 // we have to define it here.
 // *** Correct ECU_REPORT_SIZE_BITS when ECUReport_t is modified ***
-// (Use copliot to create this sum by by propmting: "sum of bitfield sizes in ECUReport_t")
-#define ECU_REPORT_SIZE_BITS (4 + 1 + 9 + 11 + 13 + 11 + 8 + 8 + 1 + 32 + 32 + 16 + 5 + 17 + 25 + 8 + 1 + 14 + 10 + 8 + 17 + 1 + 12 + 24 + 24 +8)
-// Total bits: 320 bits = 40 bytes
+// (Use copliot to create this sum by by prompting: "sum of bitfield sizes in ECUReport_t")
+
+#define ECU_REPORT_SIZE_BITS (4 + 1 + 9 + 11 + 13 + 11 + 8 + 8 + 1 + 32 + 32 + 16 + 5 + 17 + 25 + 8 + 1 + 14 + 10 + 8 + 17 + 1 + 12 + 24 + 24 + 11)
+// Total bits: 323 bits = 41 bytes
 // Round up to full byte adding 1. Perhaps there is a way to do this more elegantly with math in the #define?
 #define ECU_REPORT_SIZE_BYTES (1+ECU_REPORT_SIZE_BITS/8)
 
@@ -64,7 +65,7 @@ struct ECUReport_t
     uint16_t tsen_airt:    12;  // Raw
     uint32_t tsen_ptemp:   24;  // Raw
     uint32_t tsen_pres:    24;  // Raw
-    uint8_t  cpu_temp :    8;   // (CPU temperature+100)*10 (0-2047 : -100.0C to 104.8C)
+    uint16_t cpu_temp :    11;   // (CPU temperature+100)*10 (0-2047 : -100.0C to 104.8C)
 };
 
 // A byte array to hold the serialized ECUReport_t data structure.

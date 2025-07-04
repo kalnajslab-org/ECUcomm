@@ -159,7 +159,7 @@ ECUReportBytes_t ecu_report_serialize(ECUReport_t& report) {
     writer.write_unchecked(report.tsen_airt,   12);
     writer.write_unchecked(report.tsen_ptemp,  24);
     writer.write_unchecked(report.tsen_pres,   24);
-    writer.write_unchecked(report.cpu_temp,     8);
+    writer.write_unchecked(report.cpu_temp,    11);
 
     return data;
 }
@@ -196,7 +196,7 @@ ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data) {
     report.tsen_airt = reader.read_unchecked<uint16_t>  (12); // Raw
     report.tsen_ptemp = reader.read_unchecked<uint32_t> (24); // Raw
     report.tsen_pres = reader.read_unchecked<uint32_t>  (24); // Raw
-    report.cpu_temp = reader.read_unchecked<uint8_t>     (8); // (CPU temperature+100)*10 (0-2047 : -100.0C to 104.8C)
+    report.cpu_temp = reader.read_unchecked<uint16_t>   (11); // (CPU temperature+100)*10 (0-2047 : -100.0C to 104.8C)
 
     return report;
 }
@@ -232,5 +232,5 @@ void ecu_report_print(ECUReport_t& ecu_report, bool print_bin)
     SerialUSB.print("tsen_airt: "); if (print_bin) ecu_bin_print(ecu_report.tsen_airt,       12); SerialUSB.print(ecu_report.tsen_airt, HEX); SerialUSB.println();
     SerialUSB.print("tsen_ptemp: "); if (print_bin) ecu_bin_print(ecu_report.tsen_ptemp,     24); SerialUSB.print(ecu_report.tsen_ptemp, HEX); SerialUSB.println();
     SerialUSB.print("tsen_pres: "); if (print_bin) ecu_bin_print(ecu_report.tsen_pres,       24); SerialUSB.print(ecu_report.tsen_pres,HEX); SerialUSB.println();
-    SerialUSB.print("cpu_temp: "); if (print_bin) ecu_bin_print(ecu_report.cpu_temp,          8); SerialUSB.print(String((ecu_report.cpu_temp/10.0)-100.0, 1) + "degC"); SerialUSB.println();
+    SerialUSB.print("cpu_temp: "); if (print_bin) ecu_bin_print(ecu_report.cpu_temp,         11); SerialUSB.print(String((ecu_report.cpu_temp/10.0)-100.0, 1) + "degC"); SerialUSB.println();
 }
