@@ -41,6 +41,7 @@ void ecu_report_init(ECUReport_t& ecu_report)
     ecu_report.tsen_ptemp = 0;
     ecu_report.tsen_pres = 0;
     ecu_report.cpu_temp = 0;
+}
 
 void add_status(bool heat_on, uint8_t temp_setpoint, ECUReport_t& report) {
     report.temp_setpoint = temp_setpoint+100;
