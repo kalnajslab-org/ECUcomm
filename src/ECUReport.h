@@ -27,7 +27,7 @@
 
 // Since we don't have an automatic method to determine the number of bits in the struct,
 // we have to define it here.
-// *** Correct ECU_REPORT_SIZE_BITS when ECUReport_t is modified ***
+// *** Update ECU_REPORT_SIZE_BITS when ECUReport_t is modified ***
 // (Use copliot to create this sum by by prompting: "sum of bitfield sizes in ECUReport_t")
 
 #define ECU_REPORT_SIZE_BITS (4 + 1 + 9 + 11 + 13 + 11 + 8 + 8 + 1 + 32 + 32 + 16 + 5 + 17 + 25 + 8 + 1 + 14 + 10 + 8 + 17 + 1 + 12 + 24 + 24 + 11)
