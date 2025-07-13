@@ -2,6 +2,8 @@
 #define ECU_REPORT_H
 
 #include <Arduino.h>
+#define DIV_ROUND_UP(Numerator, Denominator) (((Numerator) + (Denominator) - 1) / (Denominator))
+
 #define ETL_NO_STL
 #define ETL_NO_INITIALIZER_LIST
 
@@ -32,8 +34,8 @@
 
 #define ECU_REPORT_SIZE_BITS (4 + 1 + 9 + 11 + 13 + 11 + 8 + 8 + 1 + 32 + 32 + 16 + 5 + 17 + 25 + 8 + 1 + 14 + 10 + 8 + 17 + 1 + 12 + 24 + 24 + 11)
 // Total bits: 323 bits = 41 bytes
-// Round up to full byte adding 1. Perhaps there is a way to do this more elegantly with math in the #define?
-#define ECU_REPORT_SIZE_BYTES (1+ECU_REPORT_SIZE_BITS/8)
+// Round up to bytes
+#define ECU_REPORT_SIZE_BYTES DIV_ROUND_UP(ECU_REPORT_SIZE_BITS, 8)
 
 // ECUReport_t defines documents/defines the data structure that will be sent over the LoRa network.
 // The data structure is defined with bitfields to establish the bit packing.
