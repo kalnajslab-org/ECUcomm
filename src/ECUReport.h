@@ -9,7 +9,7 @@
 
 #include "etl/array.h"
 
-#define ECU_REPORT_REV 3
+#define ECU_REPORT_REV 4
 
 // *** NOTE: There are several functions in ECUReport.cpp that must be updated whenever 
 // the report is modified, and they must exactly match the data structure defined here. 
@@ -32,8 +32,8 @@
 // *** Update ECU_REPORT_SIZE_BITS when ECUReport_t is modified ***
 // (Use copliot to create this sum by by prompting: "sum of bitfield sizes in ECUReport_t")
 
-#define ECU_REPORT_SIZE_BITS (4 + 1 + 9 + 11 + 13 + 11 + 8 + 8 + 1 + 32 + 32 + 16 + 5 + 17 + 25 + 8 + 1 + 14 + 10 + 8 + 17 + 1 + 12 + 24 + 24 + 11)
-// Total bits: 323 bits = 41 bytes
+#define ECU_REPORT_SIZE_BITS (4 + 1 + 9 + 11 + 13 + 11 + 8 + 8 + 1 + 32 + 32 + 16 + 5 + 19 + 25 + 8 + 1 + 14 + 10 + 8 + 17 + 1 + 12 + 24 + 24 + 11)
+// Total bits: 325 bits = 41 bytes
 // Round up to bytes
 #define ECU_REPORT_SIZE_BYTES DIV_ROUND_UP(ECU_REPORT_SIZE_BITS, 8)
 
@@ -55,7 +55,7 @@ struct ECUReport_t
     int32_t  gps_lon :     32;  // GPS Longitude*1e6 (degrees*1e6)
     uint16_t gps_alt:      16;  // GPS Altitude (meters)
     uint8_t  gps_sats:      5;  // Number of satellites n (0 to 31)
-    uint32_t gps_date:     17;  // GPS Date (MMDDYY - Year is 20YY)
+    uint32_t gps_date:     19;  // GPS Date (DDMMYY - Year is 20YY)
     uint32_t gps_time:     25;  // GPS Time (HHMMSSSS - Seconds are in 100ths)
     uint8_t  gps_age_secs:  8;  // Age of GPS data in seconds (0 to 255) 255 = greater than 254
     uint8_t  rs41_valid:    1;  // RS41 data valid (bool)
