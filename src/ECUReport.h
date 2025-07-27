@@ -37,6 +37,12 @@
 // Round up to bytes
 #define ECU_REPORT_SIZE_BYTES DIV_ROUND_UP(ECU_REPORT_SIZE_BITS, 8)
 
+// The maximum size tha any ECU report will ever have. This is
+// provided so that applications receiving an ECUReport can preallocate a buffer
+// to hold the report without having to know the exact size of the report.
+#define ECU_REPORT_MAX_SIZE_BYTES 256 
+static_assert(ECU_REPORT_SIZE_BYTES <= ECU_REPORT_MAX_SIZE_BYTES, "ECU_REPORT_SIZE_BYTES exceeds ECU_REPORT_MAX_SIZE_BYTES");
+
 // ECUReport_t defines documents/defines the data structure that will be sent over the LoRa network.
 // The data structure is defined with bitfields to establish the bit packing.
 // In compliance with C bitfield rules, the bitfield type must be large enough to hold the bitfield.
