@@ -58,9 +58,8 @@ void add_ecu_health(float v5, float v12, float v56, float board_t, float switch_
     report.cpu_temp = (cpu_temp + 100) * 10;
 }
 
-void add_gps(bool valid, bool rs41_regen_active, double lat, double lon, double alt, uint sats, uint32_t date, uint32_t time, uint age_secs, ECUReport_t& report) {
+void add_gps(bool valid, double lat, double lon, double alt, uint sats, uint32_t date, uint32_t time, uint age_secs, ECUReport_t& report) {
     report.gps_valid = valid;
-    report.rs41_regen = rs41_regen_active;
     report.gps_lat      = lat * 1.0e6;
     report.gps_lon      = lon * 1.0e6;
     report.gps_alt      = alt;
