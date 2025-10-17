@@ -87,7 +87,7 @@ void ecu_report_init(ECUReport_t& report);
 // Add ECU health to an ECUReport_t.
 void add_ecu_health(float v5, float v12, float v56, float board_t, float switch_mA, float cpu_temp, ECUReport_t& report);
 // Add statuses to an ECUReport_t.
-void add_status(bool heat_on, uint8_t temp_setpoint, ECUReport_t& report);
+void add_status(bool heat_on, uint8_t temp_setpoint, bool rs41_regen_active, ECUReport_t& report);
 // Add GPS data to an ECUReport_t.
 void add_gps(bool valid, double lat, double lon, double alt, uint sats, uint32_t date, uint32_t time, uint age_secs, ECUReport_t& report);
 // Add RS41 data to an ECUReport_t.
