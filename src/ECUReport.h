@@ -9,7 +9,7 @@
 
 #include "etl/array.h"
 
-#define ECU_REPORT_REV 4
+#define ECU_REPORT_REV 5
 
 // *** NOTE: There are several functions in ECUReport.cpp that must be updated whenever 
 // the report is modified, and they must exactly match the data structure defined here. 
@@ -32,8 +32,8 @@
 // *** Update ECU_REPORT_SIZE_BITS when ECUReport_t is modified ***
 // (Use copliot to create this sum by by prompting: "sum of bitfield sizes in ECUReport_t")
 
-#define ECU_REPORT_SIZE_BITS (4 + 1 + 9 + 11 + 13 + 11 + 8 + 8 + 1 + 32 + 32 + 16 + 5 + 19 + 25 + 8 + 1 + 14 + 10 + 8 + 17 + 1 + 12 + 24 + 24 + 11)
-// Total bits: 325 bits = 41 bytes
+#define ECU_REPORT_SIZE_BITS (4 + 1 + 9 + 11 + 13 + 11 + 8 + 8 + 1 + 32 + 32 + 16 + 5 + 19 + 25 + 8 + 1 + 1 + 14 + 10 + 8 + 17 + 1 + 12 + 24 + 24 + 11)
+// Total bits: 326 bits = 41 bytes
 // Round up to bytes
 #define ECU_REPORT_SIZE_BYTES DIV_ROUND_UP(ECU_REPORT_SIZE_BITS, 8)
 
@@ -65,6 +65,7 @@ struct ECUReport_t
     uint32_t gps_time:     25;  // GPS Time (HHMMSSSS - Seconds are in 100ths)
     uint8_t  gps_age_secs:  8;  // Age of GPS data in seconds (0 to 255) 255 = greater than 254
     uint8_t  rs41_valid:    1;  // RS41 data valid (bool)
+    uint8_t  rs41_regen:    1; // RS41 regeneration active (bool)
     uint16_t rs41_airt :   14;  // (RS41 Air Temperature+100)*100 (0-16383 : -100.00C to 63.83C) 
     uint16_t rs41_hum:     10;  // RS41 Humidity*10 (0-1023 : 0.0% to 102.3%)
     uint8_t  rs41_hst:      8;  // RS41 Humidity Sensor Temperature+100 (0-255 : -100C to 125C)
@@ -90,7 +91,7 @@ void add_status(bool heat_on, uint8_t temp_setpoint, ECUReport_t& report);
 // Add GPS data to an ECUReport_t.
 void add_gps(bool valid, double lat, double lon, double alt, uint sats, uint32_t date, uint32_t time, uint age_secs, ECUReport_t& report);
 // Add RS41 data to an ECUReport_t.
-void add_rs41(bool valid, float airt, float hum, float hst, float pres, bool pcb_h, ECUReport_t& report);
+void add_rs41(bool valid, bool rs41_regen_active, float airt, float hum, float hst, float pres, bool pcb_h, ECUReport_t& report);
 // Add TSEN data to an ECUReport_t.
 void add_tsen(uint16_t airt, uint32_t prest, uint32_t pres, ECUReport_t& report);
 // Serialize an ECUReport_t.
