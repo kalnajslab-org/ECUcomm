@@ -16,6 +16,8 @@ void ecu_report_init(ECUReport_t& ecu_report)
     // *** Modify this function whenever the ECUReport_t struct is modified ***
     ecu_report.rev = ECU_REPORT_REV;
     ecu_report.heat_on = 0;
+    ecu_report.rs41_en = 0;
+    ecu_report.tsen_power = 0;
     ecu_report.v5 = 0;
     ecu_report.v12 = 0;
     ecu_report.v56 = 0;
@@ -44,7 +46,7 @@ void ecu_report_init(ECUReport_t& ecu_report)
     ecu_report.cpu_temp = 0;
 }
 
-void add_status(bool heat_on, uint8_t temp_setpoint, bool rs41_regen_active, ECUReport_t& report) {
+void add_status(bool heat_on, uint8_t temp_setpoint, bool rs41_regen_active, bool rs41_en, bool tsen_power, ECUReport_t& report) {
     report.temp_setpoint = temp_setpoint+100;
     report.heat_on = heat_on;
 }
@@ -138,6 +140,8 @@ ECUReportBytes_t ecu_report_serialize(ECUReport_t& report) {
 
     writer.write_unchecked(report.rev,          4);
     writer.write_unchecked(report.heat_on,      1);
+    writer.write_unchecked(report.rs41_en,      1);
+    writer.write_unchecked(report.tsen_power,   1);
     writer.write_unchecked(report.v5,           9);
     writer.write_unchecked(report.v12,         11);
     writer.write_unchecked(report.v56,         13);
@@ -176,6 +180,8 @@ ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data) {
     ECUReport_t report;
     report.rev = reader.read_unchecked<uint8_t>          (4);
     report.heat_on = reader.read_unchecked<uint8_t>      (1); // Heater on (bool)
+    report.rs41_en = reader.read_unchecked<uint8_t>      (1); // RS41 enabled (bool)
+    report.tsen_power = reader.read_unchecked<uint8_t>   (1); // TSEN power (bool)
     report.v5 = reader.read_unchecked<uint16_t>          (9); // V5*100  (0-511  : 0.00V to 5.11V) 
     report.v12 = reader.read_unchecked<uint16_t>        (11); // V12*100 (0-2047 : 0.00V to 20.47V)
     report.v56 = reader.read_unchecked<uint16_t>        (13); // V56*100 (0-8191 : 0.00V to 81.91V)
@@ -213,6 +219,8 @@ void ecu_report_print(ECUReport_t& ecu_report, bool print_bin)
     SerialUSB.println("ECU Report:");
     SerialUSB.print("rev: "); if (print_bin) ecu_bin_print(ecu_report.rev,                    4); SerialUSB.print(String(ecu_report.rev)); SerialUSB.println();
     SerialUSB.print("heat_on: "); if (print_bin) ecu_bin_print(ecu_report.heat_on,            1); SerialUSB.print(ecu_report.heat_on?"True":"False"); SerialUSB.println();
+    SerialUSB.print("rs41_en: "); if (print_bin) ecu_bin_print(ecu_report.rs41_en,            1); SerialUSB.print(ecu_report.rs41_en?"True":"False"); SerialUSB.println();
+    SerialUSB.print("tsen_power: "); if (print_bin) ecu_bin_print(ecu_report.tsen_power,      1); SerialUSB.print(ecu_report.tsen_power?"True":"False"); SerialUSB.println();
     SerialUSB.print("v5: "); if (print_bin) ecu_bin_print(ecu_report.v5,                      9); SerialUSB.print(String(ecu_report.v5/100.0, 2) + "V"); SerialUSB.println();
     SerialUSB.print("v12: "); if (print_bin) ecu_bin_print(ecu_report.v12,                   11); SerialUSB.print(String(ecu_report.v12/100.0, 2) + "V"); SerialUSB.println();
     SerialUSB.print("v56: "); if (print_bin) ecu_bin_print(ecu_report.v56,                   13); SerialUSB.print(String(ecu_report.v56/100.0, 2) + "V"); SerialUSB.println();

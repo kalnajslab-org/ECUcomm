@@ -32,8 +32,8 @@
 // *** Update ECU_REPORT_SIZE_BITS when ECUReport_t is modified ***
 // (Use copliot to create this sum by by prompting: "sum of bitfield sizes in ECUReport_t")
 
-#define ECU_REPORT_SIZE_BITS (4 + 1 + 9 + 11 + 13 + 11 + 8 + 8 + 1 + 32 + 32 + 16 + 5 + 19 + 25 + 8 + 1 + 1 + 14 + 10 + 8 + 17 + 1 + 12 + 24 + 24 + 11)
-// Total bits: 326 bits = 41 bytes
+#define ECU_REPORT_SIZE_BITS (4 + 1 + 1 + 1 + 9 + 11 + 13 + 11 + 8 + 8 + 1 + 32 + 32 + 16 + 5 + 19 + 25 + 8 + 1 + 1 + 14 + 10 + 8 + 17 + 1 + 12 + 24 + 24 + 11)
+// Total bits: 328 bits = 41 bytes
 // Round up to bytes
 #define ECU_REPORT_SIZE_BYTES DIV_ROUND_UP(ECU_REPORT_SIZE_BITS, 8)
 
@@ -50,6 +50,8 @@ struct ECUReport_t
 {
     uint8_t  rev :          4;
     uint8_t  heat_on :      1;  // Heater on (bool)
+    uint8_t  rs41_en :      1;  // RS41 enabled (bool)
+    uint8_t  tsen_power :   1;  // TSEN power (bool)
     uint16_t v5 :           9;  // V5*100  (0-511  : 0.00V to 5.11V)
     uint16_t v12 :         11;  // V12*100 (0-2047 : 0.00V to 20.47V)
     uint16_t v56 :         13;  // V56*100 (0-8191 : 0.00V to 81.91V)
@@ -87,7 +89,7 @@ void ecu_report_init(ECUReport_t& report);
 // Add ECU health to an ECUReport_t.
 void add_ecu_health(float v5, float v12, float v56, float board_t, float switch_mA, float cpu_temp, ECUReport_t& report);
 // Add statuses to an ECUReport_t.
-void add_status(bool heat_on, uint8_t temp_setpoint, bool rs41_regen_active, ECUReport_t& report);
+void add_status(bool heat_on, uint8_t temp_setpoint, bool rs41_regen_active, bool rs41_en, bool tsen_power, ECUReport_t& report);
 // Add GPS data to an ECUReport_t.
 void add_gps(bool valid, double lat, double lon, double alt, uint sats, uint32_t date, uint32_t time, uint age_secs, ECUReport_t& report);
 // Add RS41 data to an ECUReport_t.
