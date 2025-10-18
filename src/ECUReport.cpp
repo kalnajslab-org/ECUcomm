@@ -49,6 +49,8 @@ void ecu_report_init(ECUReport_t& ecu_report)
 void add_status(bool heat_on, uint8_t temp_setpoint, bool rs41_regen_active, bool rs41_en, bool tsen_power, ECUReport_t& report) {
     report.temp_setpoint = temp_setpoint+100;
     report.heat_on = heat_on;
+    report.rs41_en = rs41_en;
+    report.tsen_power = tsen_power;
 }
 
 void add_ecu_health(float v5, float v12, float v56, float board_t, float switch_mA, float cpu_temp, ECUReport_t& report) {
