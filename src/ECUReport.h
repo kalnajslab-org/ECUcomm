@@ -9,7 +9,13 @@
 
 #include "etl/array.h"
 
-#define ECU_REPORT_REV 5
+#define ECU_REPORT_REV 6
+#define ECU_MAX_RAW_BYTES 200  // Maximum raw byte size for ECU report (for union in ECUReport_t)
+typedef uint8_t ECU_REPORT_MSG_TYPE;
+enum ECU_REPORT_MSG_TYPE_ENUM : ECU_REPORT_MSG_TYPE {
+    ECU_REPORT_MSG_TYPE_DATA = 0,
+    ECU_REPORT_MSG_TYPE_STRING = 1
+};
 
 // *** NOTE: There are several functions in ECUReport.cpp that must be updated whenever 
 // the report is modified, and they must exactly match the data structure defined here. 
@@ -32,8 +38,8 @@
 // *** Update ECU_REPORT_SIZE_BITS when ECUReport_t is modified ***
 // (Use copliot to create this sum by by prompting: "sum of bitfield sizes in ECUReport_t")
 
-#define ECU_REPORT_SIZE_BITS (4 + 1 + 1 + 1 + 9 + 11 + 13 + 11 + 8 + 8 + 1 + 32 + 32 + 16 + 5 + 19 + 25 + 8 + 1 + 1 + 14 + 10 + 8 + 17 + 1 + 12 + 24 + 24 + 11)
-// Total bits: 328 bits = 41 bytes
+#define ECU_REPORT_SIZE_BITS (4 + 4 + 1 + 1 + 1 + 9 + 11 + 13 + 11 + 8 + 8 + 1 + 32 + 32 + 16 + 5 + 19 + 25 + 8 + 1 + 1 + 14 + 10 + 8 + 17 + 1 + 12 + 24 + 24 + 11)
+// Total bits: 332 bits = 42 bytes
 // Round up to bytes
 #define ECU_REPORT_SIZE_BYTES DIV_ROUND_UP(ECU_REPORT_SIZE_BITS, 8)
 
@@ -48,35 +54,48 @@ static_assert(ECU_REPORT_SIZE_BYTES <= ECU_REPORT_MAX_SIZE_BYTES, "ECU_REPORT_SI
 // In compliance with C bitfield rules, the bitfield type must be large enough to hold the bitfield.
 struct ECUReport_t
 {
-    uint8_t  rev :          4;
-    uint8_t  heat_on :      1;  // Heater on (bool)
-    uint8_t  rs41_en :      1;  // RS41 enabled (bool)
-    uint8_t  tsen_power :   1;  // TSEN power (bool)
-    uint16_t v5 :           9;  // V5*100  (0-511  : 0.00V to 5.11V)
-    uint16_t v12 :         11;  // V12*100 (0-2047 : 0.00V to 20.47V)
-    uint16_t v56 :         13;  // V56*100 (0-8191 : 0.00V to 81.91V)
-    uint16_t board_t :     11;  // (Board temperature+100)*10 (0-2047 : -100.0C to 104.8C)
-    uint8_t  temp_setpoint: 8;  // Setpoint temperature+100: (0-255 : -100C to 155C) 
-    uint8_t  switch_mA :    8;  // Switch current (mA): (0ma - 255mA)
-    uint8_t  gps_valid :    1;  // GPS Valid (bool)
-    int32_t  gps_lat :     32;  // GPS Latitude*1e6 (degrees*1e6)
-    int32_t  gps_lon :     32;  // GPS Longitude*1e6 (degrees*1e6)
-    uint16_t gps_alt:      16;  // GPS Altitude (meters)
-    uint8_t  gps_sats:      5;  // Number of satellites n (0 to 31)
-    uint32_t gps_date:     19;  // GPS Date (DDMMYY - Year is 20YY)
-    uint32_t gps_time:     25;  // GPS Time (HHMMSSSS - Seconds are in 100ths)
-    uint8_t  gps_age_secs:  8;  // Age of GPS data in seconds (0 to 255) 255 = greater than 254
-    uint8_t  rs41_valid:    1;  // RS41 data valid (bool)
-    uint8_t  rs41_regen:    1; // RS41 regeneration active (bool)
-    uint16_t rs41_airt :   14;  // (RS41 Air Temperature+100)*100 (0-16383 : -100.00C to 63.83C) 
-    uint16_t rs41_hum:     10;  // RS41 Humidity*10 (0-1023 : 0.0% to 102.3%)
-    uint8_t  rs41_hst:      8;  // RS41 Humidity Sensor Temperature+100 (0-255 : -100C to 125C)
-    uint32_t rs41_pres:    17;  // RS41 Pressure*100 (0-131071 : 0.0hPa to 1310.71hPa) (should we do log10?)
-    uint8_t  rs41_pcb_h:    1;  // RS41 PCB Heater On (bool)
-    uint16_t tsen_airt:    12;  // Raw
-    uint32_t tsen_ptemp:   24;  // Raw
-    uint32_t tsen_pres:    24;  // Raw
-    uint16_t cpu_temp :    11;   // (CPU temperature+100)*10 (0-2047 : -100.0C to 104.8C)
+    uint8_t  rev :                  4; // Report structure revision number
+    ECU_REPORT_MSG_TYPE  msg_type : 4;  // Message type defines which structure is used in the message.
+        union {
+        struct {
+            // msg_type = ECU_REPORT_MSG_TYPE_DATA
+            uint8_t  heat_on :      1;  // Heater on (bool)
+            uint8_t  rs41_en :      1;  // RS41 enabled (bool)
+            uint8_t  tsen_power :   1;  // TSEN power (bool)
+            uint16_t v5 :           9;  // V5*100  (0-511  : 0.00V to 5.11V)
+            uint16_t v12 :         11;  // V12*100 (0-2047 : 0.00V to 20.47V)
+            uint16_t v56 :         13;  // V56*100 (0-8191 : 0.00V to 81.91V)
+            uint16_t board_t :     11;  // (Board temperature+100)*10 (0-2047 : -100.0C to 104.8C)
+            uint8_t  temp_setpoint: 8;  // Setpoint temperature+100: (0-255 : -100C to 155C) 
+            uint8_t  switch_mA :    8;  // Switch current (mA): (0ma - 255mA)
+            uint8_t  gps_valid :    1;  // GPS Valid (bool)
+            int32_t  gps_lat :     32;  // GPS Latitude*1e6 (degrees*1e6)
+            int32_t  gps_lon :     32;  // GPS Longitude*1e6 (degrees*1e6)
+            uint16_t gps_alt:      16;  // GPS Altitude (meters)
+            uint8_t  gps_sats:      5;  // Number of satellites n (0 to 31)
+            uint32_t gps_date:     19;  // GPS Date (DDMMYY - Year is 20YY)
+            uint32_t gps_time:     25;  // GPS Time (HHMMSSSS - Seconds are in 100ths)
+            uint8_t  gps_age_secs:  8;  // Age of GPS data in seconds (0 to 255) 255 = greater than 254
+            uint8_t  rs41_valid:    1;  // RS41 data valid (bool)
+            uint8_t  rs41_regen:    1; // RS41 regeneration active (bool)
+            uint16_t rs41_airt :   14;  // (RS41 Air Temperature+100)*100 (0-16383 : -100.00C to 63.83C) 
+            uint16_t rs41_hum:     10;  // RS41 Humidity*10 (0-1023 : 0.0% to 102.3%)
+            uint8_t  rs41_hst:      8;  // RS41 Humidity Sensor Temperature+100 (0-255 : -100C to 125C)
+            uint32_t rs41_pres:    17;  // RS41 Pressure*100 (0-131071 : 0.0hPa to 1310.71hPa) (should we do log10?)
+            uint8_t  rs41_pcb_h:    1;  // RS41 PCB Heater On (bool)
+            uint16_t tsen_airt:    12;  // Raw
+            uint32_t tsen_ptemp:   24;  // Raw
+            uint32_t tsen_pres:    24;  // Raw
+            uint16_t cpu_temp :    11;   // (CPU temperature+100)*10 (0-2047 : -100.0C to 104.8C)
+        }; // 328 bits = 41 bytes
+        struct {
+            // msg_type = ECU_REPORT_MSG_TYPE_STRING
+            // A generic raw data message. ECU_MAX_RAW_BYTES will be transmitted, 
+            // but only n_bytes will be valid.
+            uint8_t n_bytes : 8;  // Number of valid bytes in raw[]
+            uint8_t raw[ECU_MAX_RAW_BYTES]; 
+        };
+    };
 };
 
 // A byte array to hold the serialized ECUReport_t data structure.
