@@ -15,7 +15,7 @@ void ecu_report_init(ECUReport_t& ecu_report)
 {
     // *** Modify this function whenever the ECUReport_t struct is modified ***
     ecu_report.rev = ECU_REPORT_REV;
-    ecu_report.msg_type = ECU_REPORT_MSG_TYPE_DATA;
+    ecu_report.msg_type = ECU_REPORT_DATA;
     ecu_report.heat_on = 0;
     ecu_report.rs41_en = 0;
     ecu_report.tsen_power = 0;
@@ -133,6 +133,30 @@ void add_tsen(uint16_t airt, uint32_t prest, uint32_t pres, ECUReport_t& report)
     }
 }
 
+size_t ecu_report_serialized_size(ECUReport_t& report) {
+    switch (report.msg_type) {
+        case ECU_REPORT_DATA:
+            return ECU_DATA_REPORT_SIZE_BYTES;
+        case ECU_REPORT_RAW:
+        default: // Unknown type -- treat as RAW
+            return 2 + ECU_MAX_RAW_BYTES; // rev (4 bits) + msg_type (4 bits) + n_bytes (8 bits) + raw[]
+    }
+}
+
+void ecu_report_print_raw(ECUReport_t& ecu_report){
+    // Print the raw data as text
+
+    for (size_t i = 0; i < ecu_report.n_bytes; i++) {
+        char c = static_cast<char>(ecu_report.raw[i]);
+        // Print printable characters, else print '.'
+        if (isprint(c)) {
+            Serial.print(c);
+        } else {
+            Serial.print('.');
+        }
+    }
+}
+
 ECUReportBytes_t ecu_report_serialize(ECUReport_t& report) {
 
     // *** Modify this function whenever the ECUReport_t struct is modified ***
@@ -143,42 +167,55 @@ ECUReportBytes_t ecu_report_serialize(ECUReport_t& report) {
 
     writer.write_unchecked(report.rev,          4);
     writer.write_unchecked(report.msg_type,     4);
-    writer.write_unchecked(report.heat_on,      1);
-    writer.write_unchecked(report.rs41_en,      1);
-    writer.write_unchecked(report.tsen_power,   1);
-    writer.write_unchecked(report.v5,           9);
-    writer.write_unchecked(report.v12,         11);
-    writer.write_unchecked(report.v56,         13);
-    writer.write_unchecked(report.board_t,     11);
-    writer.write_unchecked(report.temp_setpoint,8);
-    writer.write_unchecked(report.switch_mA,    8);
-    writer.write_unchecked(report.gps_valid,    1);
-    writer.write_unchecked(report.gps_lat,     32);
-    writer.write_unchecked(report.gps_lon,     32);
-    writer.write_unchecked(report.gps_alt,     16);
-    writer.write_unchecked(report.gps_sats,     5);
-    writer.write_unchecked(report.gps_date,    19);
-    writer.write_unchecked(report.gps_time,    25);
-    writer.write_unchecked(report.gps_age_secs, 8);
-    writer.write_unchecked(report.rs41_valid,   1);
-    writer.write_unchecked(report.rs41_regen,   1);
-    writer.write_unchecked(report.rs41_airt,   14);
-    writer.write_unchecked(report.rs41_hum,    10);
-    writer.write_unchecked(report.rs41_hst,     8);
-    writer.write_unchecked(report.rs41_pres,   17);
-    writer.write_unchecked(report.rs41_pcb_h,   1);
-    writer.write_unchecked(report.tsen_airt,   12);
-    writer.write_unchecked(report.tsen_ptemp,  24);
-    writer.write_unchecked(report.tsen_pres,   24);
-    writer.write_unchecked(report.cpu_temp,    11);
+
+    switch (report.msg_type) {
+        case ECU_REPORT_DATA:
+            writer.write_unchecked(report.heat_on,      1);
+            writer.write_unchecked(report.rs41_en,      1);
+            writer.write_unchecked(report.tsen_power,   1);
+            writer.write_unchecked(report.v5,           9);
+            writer.write_unchecked(report.v12,         11);
+            writer.write_unchecked(report.v56,         13);
+            writer.write_unchecked(report.board_t,     11);
+            writer.write_unchecked(report.temp_setpoint,8);
+            writer.write_unchecked(report.switch_mA,    8);
+            writer.write_unchecked(report.gps_valid,    1);
+            writer.write_unchecked(report.gps_lat,     32);
+            writer.write_unchecked(report.gps_lon,     32);
+            writer.write_unchecked(report.gps_alt,     16);
+            writer.write_unchecked(report.gps_sats,     5);
+            writer.write_unchecked(report.gps_date,    19);
+            writer.write_unchecked(report.gps_time,    25);
+            writer.write_unchecked(report.gps_age_secs, 8);
+            writer.write_unchecked(report.rs41_valid,   1);
+            writer.write_unchecked(report.rs41_regen,   1);
+            writer.write_unchecked(report.rs41_airt,   14);
+            writer.write_unchecked(report.rs41_hum,    10);
+            writer.write_unchecked(report.rs41_hst,     8);
+            writer.write_unchecked(report.rs41_pres,   17);
+            writer.write_unchecked(report.rs41_pcb_h,   1);
+            writer.write_unchecked(report.tsen_airt,   12);
+            writer.write_unchecked(report.tsen_ptemp,  24);
+            writer.write_unchecked(report.tsen_pres,   24);
+            writer.write_unchecked(report.cpu_temp,    11);
+            break;
+        case ECU_REPORT_RAW:
+        default: // Unknown type -- treat as RAW
+            // For string type, we only serialize rev, msg_type, n_bytes, and raw[]
+            writer.write_unchecked(report.n_bytes, 8);
+            for (uint i = 0; i < ECU_MAX_RAW_BYTES; i++) {
+                writer.write_unchecked(report.raw[i], 8);
+            }
+            break;
+    }
 
     return data;
 }
-std::pair<uint8_t, ECU_REPORT_MSG_TYPE> ecu_report_deserialize_rev_msg_type(const ECUReportBytes_t& data) {
+std::pair<uint8_t, ECU_REPORT_TYPE> ecu_report_deserialize_rev_msg_type(const ECUReportBytes_t& data) {
     // The first byte contains: rev (4 bits, MSB), msg_type (4 bits, LSB)
     uint8_t first = data[0];
     uint8_t rev = (first >> 4) & 0x0F;
-    ECU_REPORT_MSG_TYPE msg_type = static_cast<ECU_REPORT_MSG_TYPE>(first & 0x0F);
+    ECU_REPORT_TYPE msg_type = static_cast<ECU_REPORT_TYPE>(first & 0x0F);
     return {rev, msg_type};
 }
 ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data) {
@@ -190,10 +227,10 @@ ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data) {
 
     ECUReport_t report;
     report.rev = reader.read_unchecked<uint8_t>                 (4);
-    report.msg_type = reader.read_unchecked<ECU_REPORT_MSG_TYPE>(4);
+    report.msg_type = reader.read_unchecked<ECU_REPORT_TYPE>(4);
 
     switch (report.msg_type) {
-        case ECU_REPORT_MSG_TYPE_DATA:
+        case ECU_REPORT_DATA:
             // OK
             report.heat_on = reader.read_unchecked<uint8_t>      (1); // Heater on (bool)
             report.rs41_en = reader.read_unchecked<uint8_t>      (1); // RS41 enabled (bool)
@@ -224,7 +261,12 @@ ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data) {
             report.tsen_pres = reader.read_unchecked<uint32_t>  (24); // Raw
             report.cpu_temp = reader.read_unchecked<uint16_t>   (11); // (CPU temperature+100)*10 (0-2047 : -100.0C to 104.8C)
             break;
-        case ECU_REPORT_MSG_TYPE_STRING:
+        case ECU_REPORT_RAW:
+            report.n_bytes = reader.read_unchecked<uint8_t>(8);
+            for (uint i = 0; i < ECU_MAX_RAW_BYTES; i++) {
+                report.raw[i] = reader.read_unchecked<uint8_t>(8);
+            }
+            break;
             // Not implemented yet
             break;
         default:
@@ -245,7 +287,7 @@ void ecu_report_print(ECUReport_t& ecu_report, bool print_bin)
     SerialUSB.print("msg_type: "); if (print_bin) ecu_bin_print(ecu_report.msg_type,          4); SerialUSB.print(String(ecu_report.msg_type)); SerialUSB.println();
 
     switch (ecu_report.msg_type) {
-        case ECU_REPORT_MSG_TYPE_DATA:
+        case ECU_REPORT_DATA:
             SerialUSB.print("heat_on: "); if (print_bin) ecu_bin_print(ecu_report.heat_on,            1); SerialUSB.print(ecu_report.heat_on?"True":"False"); SerialUSB.println();
             SerialUSB.print("rs41_en: "); if (print_bin) ecu_bin_print(ecu_report.rs41_en,            1); SerialUSB.print(ecu_report.rs41_en?"True":"False"); SerialUSB.println();
             SerialUSB.print("tsen_power: "); if (print_bin) ecu_bin_print(ecu_report.tsen_power,      1); SerialUSB.print(ecu_report.tsen_power?"True":"False"); SerialUSB.println();
@@ -275,7 +317,7 @@ void ecu_report_print(ECUReport_t& ecu_report, bool print_bin)
             SerialUSB.print("tsen_pres: "); if (print_bin) ecu_bin_print(ecu_report.tsen_pres,       24); SerialUSB.print(ecu_report.tsen_pres,HEX); SerialUSB.println();
             SerialUSB.print("cpu_temp: "); if (print_bin) ecu_bin_print(ecu_report.cpu_temp,         11); SerialUSB.print(String((ecu_report.cpu_temp/10.0)-100.0, 1) + "degC"); SerialUSB.println();
             break;
-        case ECU_REPORT_MSG_TYPE_STRING:
+        case ECU_REPORT_RAW:
             SerialUSB.println("  String Message:");
             break;
         default:

@@ -10,11 +10,13 @@
 #include "etl/array.h"
 
 #define ECU_REPORT_REV 6
+
 #define ECU_MAX_RAW_BYTES 200  // Maximum raw byte size for ECU report (for union in ECUReport_t)
-typedef uint8_t ECU_REPORT_MSG_TYPE;
-enum ECU_REPORT_MSG_TYPE_ENUM : ECU_REPORT_MSG_TYPE {
-    ECU_REPORT_MSG_TYPE_DATA = 0,
-    ECU_REPORT_MSG_TYPE_STRING = 1
+
+typedef uint8_t ECU_REPORT_TYPE;
+enum ECU_REPORT_TYPE_ENUM : ECU_REPORT_TYPE {
+    ECU_REPORT_DATA = 0,  // Standard ECU data report
+    ECU_REPORT_RAW  = 1   // Raw bytes data report (string or binary)
 };
 
 // *** NOTE: There are several functions in ECUReport.cpp that must be updated whenever 
@@ -29,25 +31,12 @@ enum ECU_REPORT_MSG_TYPE_ENUM : ECU_REPORT_MSG_TYPE {
 // However, one of the fringe benefits of using bitfields is that the compiler will 
 // truncate assignments to fit the bitfield size.
 
-// The ECUReportBytes_t is a byte array that will hold the serialized ECUReport_t data structure.
-// etl::bit_stream_writer is used to serialize the data structure into a byte array (ECUReportBytes_t).
-// etl::bit_stream_reader is used to deserialize the byte array back into the data structure.
-
-// Since we don't have an automatic method to determine the number of bits in the struct,
-// we have to define it here.
-// *** Update ECU_REPORT_SIZE_BITS when ECUReport_t is modified ***
-// (Use copliot to create this sum by by prompting: "sum of bitfield sizes in ECUReport_t")
-
-#define ECU_REPORT_SIZE_BITS (4 + 4 + 1 + 1 + 1 + 9 + 11 + 13 + 11 + 8 + 8 + 1 + 32 + 32 + 16 + 5 + 19 + 25 + 8 + 1 + 1 + 14 + 10 + 8 + 17 + 1 + 12 + 24 + 24 + 11)
-// Total bits: 332 bits = 42 bytes
-// Round up to bytes
-#define ECU_REPORT_SIZE_BYTES DIV_ROUND_UP(ECU_REPORT_SIZE_BITS, 8)
-
-// The maximum size tha any ECU report will ever have. This is
-// provided so that applications receiving an ECUReport can preallocate a buffer
-// to hold the report without having to know the exact size of the report.
-#define ECU_REPORT_MAX_SIZE_BYTES 256 
-static_assert(ECU_REPORT_SIZE_BYTES <= ECU_REPORT_MAX_SIZE_BYTES, "ECU_REPORT_SIZE_BYTES exceeds ECU_REPORT_MAX_SIZE_BYTES");
+// There are two message types defined:
+// 1) ECU_REPORT_DATA: This is the standard ECU data report with all fields defined in ECUReport_t.
+// 2) ECU_REPORT_RAW: This is a raw byte data report. It can be used to send arbitrary data (string or binary).
+// Both message types start with the same header fields (rev and msg_type) to allow identification of the message type
+// during deserialization. The remainder of the message is interpreted based on the msg_type field, and is
+// defined by a union in the ECUReport_t struct.
 
 // ECUReport_t defines documents/defines the data structure that will be sent over the LoRa network.
 // The data structure is defined with bitfields to establish the bit packing.
@@ -55,10 +44,10 @@ static_assert(ECU_REPORT_SIZE_BYTES <= ECU_REPORT_MAX_SIZE_BYTES, "ECU_REPORT_SI
 struct ECUReport_t
 {
     uint8_t  rev :                  4; // Report structure revision number
-    ECU_REPORT_MSG_TYPE  msg_type : 4;  // Message type defines which structure is used in the message.
+    ECU_REPORT_TYPE  msg_type : 4;  // Message type defines which structure is used in the message.
         union {
         struct {
-            // msg_type = ECU_REPORT_MSG_TYPE_DATA
+            // msg_type = ECU_REPORT_DATA
             uint8_t  heat_on :      1;  // Heater on (bool)
             uint8_t  rs41_en :      1;  // RS41 enabled (bool)
             uint8_t  tsen_power :   1;  // TSEN power (bool)
@@ -89,7 +78,7 @@ struct ECUReport_t
             uint16_t cpu_temp :    11;   // (CPU temperature+100)*10 (0-2047 : -100.0C to 104.8C)
         }; // 328 bits = 41 bytes
         struct {
-            // msg_type = ECU_REPORT_MSG_TYPE_STRING
+            // msg_type = ECU_REPORT_RAW
             // A generic raw data message. ECU_MAX_RAW_BYTES will be transmitted, 
             // but only n_bytes will be valid.
             uint8_t n_bytes : 8;  // Number of valid bytes in raw[]
@@ -98,16 +87,33 @@ struct ECUReport_t
     };
 };
 
-// A byte array to hold the serialized ECUReport_t data structure.
-// etl::bit_stream_writer is used to serialize ECUReport_t into ECUReportBytes_t.
-// etl::bit_stream_reader is used to deserialize ECUReportBytes_t into ECUReport_t.
-typedef etl::array<uint8_t, ECU_REPORT_SIZE_BYTES> ECUReportBytes_t;
+// The ECUReportBytes_t is a byte array that will hold the serialized ECUReport_t data structure.
+// etl::bit_stream_writer is used to serialize the data structure into a byte array (ECUReportBytes_t).
+// etl::bit_stream_reader is used to deserialize the byte array back into the data structure.
+
+// The maximum size tha any ECU report will ever have. This is
+// provided so that applications receiving an ECUReport can preallocate a buffer
+// to hold the report without having to know the exact size of the report.
+#define ECU_REPORT_MAX_SIZE_BYTES 256 
+typedef etl::array<uint8_t, ECU_REPORT_MAX_SIZE_BYTES> ECUReportBytes_t;
+
+// Since we don't have an automatic method to determine the number of bits in the serialized ECU_REPORT_DATA struct,
+// we have to define it here.
+// *** Update ECU_DATA_REPORT_SIZE_BITS when ECUReport_t is modified ***
+// (Use copliot to create this sum by by prompting: "sum of bitfield sizes in ECUReport_t")
+
+#define ECU_DATA_REPORT_SIZE_BITS (4 + 4 + 1 + 1 + 1 + 9 + 11 + 13 + 11 + 8 + 8 + 1 + 32 + 32 + 16 + 5 + 19 + 25 + 8 + 1 + 1 + 14 + 10 + 8 + 17 + 1 + 12 + 24 + 24 + 11)
+// Total bits: 332 bits = 42 bytes
+// Round up to bytes
+#define ECU_DATA_REPORT_SIZE_BYTES DIV_ROUND_UP(ECU_DATA_REPORT_SIZE_BITS, 8)
+
+static_assert(ECU_DATA_REPORT_SIZE_BYTES <= ECU_REPORT_MAX_SIZE_BYTES, "ECU_DATA_REPORT_SIZE_BYTES exceeds ECU_REPORT_MAX_SIZE_BYTES");
 
 // Initialize all fields in an ECUReport_t.
 void ecu_report_init(ECUReport_t& report);
 // Deserialize the revision and message type from ECUReportBytes_t.
 // Returns a pair: <rev, msg_type>
-std::pair<uint8_t, ECU_REPORT_MSG_TYPE> ecu_report_deserialize_rev_msg_type(const ECUReportBytes_t& data);
+std::pair<uint8_t, ECU_REPORT_TYPE> ecu_report_deserialize_rev_msg_type(const ECUReportBytes_t& data);
 // Add ECU health to an ECUReport_t.
 void add_ecu_health(float v5, float v12, float v56, float board_t, float switch_mA, float cpu_temp, ECUReport_t& report);
 // Add statuses to an ECUReport_t.
@@ -118,6 +124,8 @@ void add_gps(bool valid, double lat, double lon, double alt, uint sats, uint32_t
 void add_rs41(bool valid, bool rs41_regen_active, float airt, float hum, float hst, float pres, bool pcb_h, ECUReport_t& report);
 // Add TSEN data to an ECUReport_t.
 void add_tsen(uint16_t airt, uint32_t prest, uint32_t pres, ECUReport_t& report);
+// Size of the serialized ECUReport_t in bytes, based on the message type.
+size_t ecu_report_serialized_size(ECUReport_t& report);
 // Serialize an ECUReport_t.
 ECUReportBytes_t ecu_report_serialize(ECUReport_t& report);
 // Deserialize an ECUReportBytes_t.
@@ -125,6 +133,8 @@ ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data);
 // Print an ECUReport_t.
 // If print_bin is true, the binary representation of the report will be included in the print.
 void ecu_report_print(ECUReport_t& ecu_report, bool print_bin=false);
+// Print ECU_MSG_TYPE_STRING raw data as text.
+void ecu_report_print_raw(ECUReport_t& ecu_report_raw);
 // Print a uint32_t in binary, with zero fill.
 // n is the number to print.
 // w is the number of bits to print.
