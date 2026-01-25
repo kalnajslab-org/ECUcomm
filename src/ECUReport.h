@@ -105,6 +105,9 @@ typedef etl::array<uint8_t, ECU_REPORT_SIZE_BYTES> ECUReportBytes_t;
 
 // Initialize all fields in an ECUReport_t.
 void ecu_report_init(ECUReport_t& report);
+// Deserialize the revision and message type from ECUReportBytes_t.
+// Returns a pair: <rev, msg_type>
+std::pair<uint8_t, ECU_REPORT_MSG_TYPE> ecu_report_deserialize_rev_msg_type(const ECUReportBytes_t& data);
 // Add ECU health to an ECUReport_t.
 void add_ecu_health(float v5, float v12, float v56, float board_t, float switch_mA, float cpu_temp, ECUReport_t& report);
 // Add statuses to an ECUReport_t.

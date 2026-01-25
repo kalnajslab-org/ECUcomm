@@ -174,6 +174,13 @@ ECUReportBytes_t ecu_report_serialize(ECUReport_t& report) {
 
     return data;
 }
+std::pair<uint8_t, ECU_REPORT_MSG_TYPE> ecu_report_deserialize_rev_msg_type(const ECUReportBytes_t& data) {
+    // The first byte contains: rev (4 bits, MSB), msg_type (4 bits, LSB)
+    uint8_t first = data[0];
+    uint8_t rev = (first >> 4) & 0x0F;
+    ECU_REPORT_MSG_TYPE msg_type = static_cast<ECU_REPORT_MSG_TYPE>(first & 0x0F);
+    return {rev, msg_type};
+}
 ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data) {
     
     // *** Modify this function whenever the ECUReport_t struct is modified ***
