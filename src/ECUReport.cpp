@@ -323,11 +323,12 @@ void ecu_report_print(ECUReport_t& ecu_report, bool print_bin)
                 char c = static_cast<char>(ecu_report.raw[i]);
                 // Print printable characters, else print '.'
                 if (isprint(c)) {
-                    Serial.print(c);
+                    SerialUSB.print(c);
                 } else {
-                    Serial.print('.');
+                    SerialUSB.print('.');
                 }
             }
+            SerialUSB.println();
             break;
         default:
             SerialUSB.println("  Unknown Message Type:");
