@@ -211,11 +211,11 @@ ECUReportBytes_t ecu_report_serialize(ECUReport_t& report) {
 
     return data;
 }
-std::pair<uint8_t, ECU_REPORT_TYPE> ecu_report_deserialize_rev_msg_type(const ECUReportBytes_t& data) {
+std::pair<uint8_t, ECU_REPORT_TYPE_t> ecu_report_deserialize_rev_msg_type(const ECUReportBytes_t& data) {
     // The first byte contains: rev (4 bits, MSB), msg_type (4 bits, LSB)
     uint8_t first = data[0];
     uint8_t rev = (first >> 4) & 0x0F;
-    ECU_REPORT_TYPE msg_type = static_cast<ECU_REPORT_TYPE>(first & 0x0F);
+    ECU_REPORT_TYPE_t msg_type = static_cast<ECU_REPORT_TYPE_t>(first & 0x0F);
     return {rev, msg_type};
 }
 ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data) {
@@ -227,7 +227,7 @@ ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data) {
 
     ECUReport_t report;
     report.rev = reader.read_unchecked<uint8_t>                 (4);
-    report.msg_type = reader.read_unchecked<ECU_REPORT_TYPE>(4);
+    report.msg_type = reader.read_unchecked<ECU_REPORT_TYPE_t>(4);
 
     switch (report.msg_type) {
         case ECU_REPORT_DATA:
@@ -318,7 +318,16 @@ void ecu_report_print(ECUReport_t& ecu_report, bool print_bin)
             SerialUSB.print("cpu_temp: "); if (print_bin) ecu_bin_print(ecu_report.cpu_temp,         11); SerialUSB.print(String((ecu_report.cpu_temp/10.0)-100.0, 1) + "degC"); SerialUSB.println();
             break;
         case ECU_REPORT_RAW:
-            SerialUSB.println("  String Message:");
+            // Print the raw data as text
+            for (size_t i = 0; i < ecu_report.n_bytes; i++) {
+                char c = static_cast<char>(ecu_report.raw[i]);
+                // Print printable characters, else print '.'
+                if (isprint(c)) {
+                    Serial.print(c);
+                } else {
+                    Serial.print('.');
+                }
+            }
             break;
         default:
             SerialUSB.println("  Unknown Message Type:");

@@ -13,8 +13,8 @@
 
 #define ECU_MAX_RAW_BYTES 200  // Maximum raw byte size for ECU report (for union in ECUReport_t)
 
-typedef uint8_t ECU_REPORT_TYPE;
-enum ECU_REPORT_TYPE_ENUM : ECU_REPORT_TYPE {
+typedef uint8_t ECU_REPORT_TYPE_t;
+enum ECU_REPORT_TYPE_ENUM : ECU_REPORT_TYPE_t {
     ECU_REPORT_DATA = 0,  // Standard ECU data report
     ECU_REPORT_RAW  = 1   // Raw bytes data report (string or binary)
 };
@@ -43,8 +43,8 @@ enum ECU_REPORT_TYPE_ENUM : ECU_REPORT_TYPE {
 // In compliance with C bitfield rules, the bitfield type must be large enough to hold the bitfield.
 struct ECUReport_t
 {
-    uint8_t  rev :                  4; // Report structure revision number
-    ECU_REPORT_TYPE  msg_type : 4;  // Message type defines which structure is used in the message.
+    uint8_t            rev :      4; // Report structure revision number
+    ECU_REPORT_TYPE_t  msg_type : 4;  // Message type defines which structure is used in the message.
         union {
         struct {
             // msg_type = ECU_REPORT_DATA
@@ -113,7 +113,7 @@ static_assert(ECU_DATA_REPORT_SIZE_BYTES <= ECU_REPORT_MAX_SIZE_BYTES, "ECU_DATA
 void ecu_report_init(ECUReport_t& report);
 // Deserialize the revision and message type from ECUReportBytes_t.
 // Returns a pair: <rev, msg_type>
-std::pair<uint8_t, ECU_REPORT_TYPE> ecu_report_deserialize_rev_msg_type(const ECUReportBytes_t& data);
+std::pair<uint8_t, ECU_REPORT_TYPE_t> ecu_report_deserialize_rev_msg_type(const ECUReportBytes_t& data);
 // Add ECU health to an ECUReport_t.
 void add_ecu_health(float v5, float v12, float v56, float board_t, float switch_mA, float cpu_temp, ECUReport_t& report);
 // Add statuses to an ECUReport_t.
