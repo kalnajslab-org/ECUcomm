@@ -112,7 +112,7 @@ typedef etl::array<uint8_t, ECU_REPORT_MAX_SIZE_BYTES> ECUReportBytes_t;
 static_assert(ECU_DATA_REPORT_SIZE_BYTES <= ECU_REPORT_MAX_SIZE_BYTES, "ECU_DATA_REPORT_SIZE_BYTES exceeds ECU_REPORT_MAX_SIZE_BYTES");
 
 // Initialize all fields in an ECUReport_t.
-void ecu_report_init(ECUReport_t& report);
+void ecu_report_init(ECUReport_t& report, uint8_t ecu_id);
 // Add ECU health to an ECUReport_t.
 void add_ecu_health(float v5, float v12, float v56, float board_t, float switch_mA, float cpu_temp, ECUReport_t& report);
 // Add statuses to an ECUReport_t.
