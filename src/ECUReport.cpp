@@ -41,6 +41,7 @@ void ecu_report_init(ECUReport_t& ecu_report, uint8_t ecu_id)
     ecu_report.rs41_hum = 0;
     ecu_report.rs41_hst = 0;
     ecu_report.rs41_pres = 0;
+    ecu_report.rs41_magXY = 0;
     ecu_report.rs41_pcb_h = 0;
     ecu_report.tsen_airt = 0;
     ecu_report.tsen_ptemp = 0;
@@ -75,7 +76,7 @@ void add_gps(bool valid, double lat, double lon, double alt, uint sats, uint32_t
     report.gps_age_secs = (age_secs > 255) ? 255 : age_secs;
 }
 
-void add_rs41(bool valid, bool rs41_regen_active, float airt, float hum, float hst, float pres, bool pcb_h, ECUReport_t& report) {
+void add_rs41(bool valid, bool rs41_regen_active, float airt, float hum, float hst, float pres, float magXY, bool pcb_h, ECUReport_t& report) {
     report.rs41_valid = valid;
     report.rs41_regen = rs41_regen_active;
 
@@ -109,6 +110,14 @@ void add_rs41(bool valid, bool rs41_regen_active, float airt, float hum, float h
         report.rs41_pres = 131071;
     } else {
         report.rs41_pres = pres * 100;
+    }
+
+    if (magXY < 0.0) {
+        report.rs41_magXY = 0;
+    } else if (magXY > 360.0) {
+        report.rs41_magXY = 255;
+    } else {
+        report.rs41_magXY = (magXY / 360.0) * 255.0;
     }
 
     report.rs41_pcb_h = pcb_h;
@@ -195,6 +204,7 @@ ECUReportBytes_t ecu_report_serialize(ECUReport_t& report) {
             writer.write_unchecked(report.rs41_hum,    10);
             writer.write_unchecked(report.rs41_hst,     8);
             writer.write_unchecked(report.rs41_pres,   17);
+            writer.write_unchecked(report.rs41_magXY,   8);
             writer.write_unchecked(report.rs41_pcb_h,   1);
             writer.write_unchecked(report.tsen_airt,   12);
             writer.write_unchecked(report.tsen_ptemp,  24);
@@ -259,6 +269,7 @@ ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data) {
             report.rs41_hum = reader.read_unchecked<uint16_t>   (10); // RS41 Humidity*10 (0-1023 : 0.0% to 102.3%)
             report.rs41_hst = reader.read_unchecked<uint8_t>     (8); // RS41 Humidity Sensor Temperature+100 (0-255 : -100C to 125C)
             report.rs41_pres = reader.read_unchecked<uint32_t>  (17); // RS41 Pressure*100 (0-131071 : 0.0hPa to 1310.71hPa) (should we do log10?)
+            report.rs41_magXY = reader.read_unchecked<uint8_t>   (8); // RS41 Magnetometer XY (0-255 : 0-360 degrees)
             report.rs41_pcb_h = reader.read_unchecked<uint8_t>   (1); // RS41 PCB Heater On (bool)
             report.tsen_airt = reader.read_unchecked<uint16_t>  (12); // Raw
             report.tsen_ptemp = reader.read_unchecked<uint32_t> (24); // Raw
@@ -316,6 +327,7 @@ void ecu_report_print(ECUReport_t& ecu_report, bool print_bin)
             SerialUSB.print("rs41_hum: "); if (print_bin) ecu_bin_print(ecu_report.rs41_hum,         10); SerialUSB.print(String(ecu_report.rs41_hum/10.0, 1) + "%"); SerialUSB.println();
             SerialUSB.print("rs41_hst: "); if (print_bin) ecu_bin_print(ecu_report.rs41_hst,          8); SerialUSB.print(String((ecu_report.rs41_hst/1.0)-100.0, 1) + "degC"); SerialUSB.println();
             SerialUSB.print("rs41_pres: "); if (print_bin) ecu_bin_print(ecu_report.rs41_pres,       17); SerialUSB.print(String(ecu_report.rs41_pres/100.0, 2) + "hPa"); SerialUSB.println();
+            SerialUSB.print("rs41_magXY: "); if (print_bin) ecu_bin_print(ecu_report.rs41_magXY,      8); SerialUSB.print(String((ecu_report.rs41_magXY/255.0)*360.0, 1) + "deg"); SerialUSB.println();
             SerialUSB.print("rs41_pcb_h: "); if (print_bin) ecu_bin_print(ecu_report.rs41_pcb_h,      1); SerialUSB.print(ecu_report.rs41_pcb_h?"True":"False"); SerialUSB.println();
             SerialUSB.print("tsen_airt: "); if (print_bin) ecu_bin_print(ecu_report.tsen_airt,       12); SerialUSB.print(ecu_report.tsen_airt, HEX); SerialUSB.println();
             SerialUSB.print("tsen_ptemp: "); if (print_bin) ecu_bin_print(ecu_report.tsen_ptemp,     24); SerialUSB.print(ecu_report.tsen_ptemp, HEX); SerialUSB.println();

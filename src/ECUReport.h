@@ -73,6 +73,7 @@ struct ECUReport_t
             uint16_t rs41_hum:     10;  // RS41 Humidity*10 (0-1023 : 0.0% to 102.3%)
             uint8_t  rs41_hst:      8;  // RS41 Humidity Sensor Temperature+100 (0-255 : -100C to 125C)
             uint32_t rs41_pres:    17;  // RS41 Pressure*100 (0-131071 : 0.0hPa to 1310.71hPa) (should we do log10?)
+            uint8_t  rs41_magXY:    8;  // RS41 Magnetometer XY (0-255 : 0-360 degrees)
             uint8_t  rs41_pcb_h:    1;  // RS41 PCB Heater On (bool)
             uint16_t tsen_airt:    12;  // Raw
             uint32_t tsen_ptemp:   24;  // Raw
@@ -94,8 +95,8 @@ struct ECUReport_t
 // *** Update ECU_DATA_REPORT_SIZE_BITS when ECUReport_t is modified ***
 // (Use copliot to create this sum by by prompting: "sum of bitfield sizes in ECUReport_t")
 
-#define ECU_DATA_REPORT_SIZE_BITS (4 + 4 + 8 + 1 + 1 + 1 + 9 + 11 + 13 + 11 + 8 + 8 + 1 + 32 + 32 + 16 + 5 + 19 + 25 + 8 + 1 + 1 + 14 + 10 + 8 + 17 + 1 + 12 + 24 + 24 + 11)
-// Total bits: 340 bits = 43 bytes
+#define ECU_DATA_REPORT_SIZE_BITS (4 + 4 + 8 + 1 + 1 + 1 + 9 + 11 + 13 + 11 + 8 + 8 + 1 + 32 + 32 + 16 + 5 + 19 + 25 + 8 + 1 + 1 + 14 + 10 + 8 + 17 + 8 + 1 + 12 + 24 + 24 + 11)
+// Total bits: 348 bits = 44 bytes
 // Round up to bytes
 #define ECU_DATA_REPORT_SIZE_BYTES DIV_ROUND_UP(ECU_DATA_REPORT_SIZE_BITS, 8)
 
@@ -120,7 +121,7 @@ void add_status(bool heat_on, uint8_t temp_setpoint, bool rs41_regen_active, boo
 // Add GPS data to an ECUReport_t.
 void add_gps(bool valid, double lat, double lon, double alt, uint sats, uint32_t date, uint32_t time, uint age_secs, ECUReport_t& report);
 // Add RS41 data to an ECUReport_t.
-void add_rs41(bool valid, bool rs41_regen_active, float airt, float hum, float hst, float pres, bool pcb_h, ECUReport_t& report);
+void add_rs41(bool valid, bool rs41_regen_active, float airt, float hum, float hst, float pres, float magXY, bool pcb_h, ECUReport_t& report);
 // Add TSEN data to an ECUReport_t.
 void add_tsen(uint16_t airt, uint32_t prest, uint32_t pres, ECUReport_t& report);
 // Size of the serialized ECUReport_t in bytes, based on the message type.
