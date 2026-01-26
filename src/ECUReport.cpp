@@ -11,11 +11,12 @@ void ecu_bin_print(uint32_t n, uint8_t w)
     SerialUSB.print(" ");
 }
 
-void ecu_report_init(ECUReport_t& ecu_report)
+void ecu_report_init(ECUReport_t& ecu_report, uint8_t ecu_id)
 {
     // *** Modify this function whenever the ECUReport_t struct is modified ***
     ecu_report.rev = ECU_REPORT_REV;
     ecu_report.msg_type = ECU_REPORT_DATA;
+    ecu_report.ecu_id = ecu_id;
     ecu_report.heat_on = 0;
     ecu_report.rs41_en = 0;
     ecu_report.tsen_power = 0;
@@ -167,6 +168,7 @@ ECUReportBytes_t ecu_report_serialize(ECUReport_t& report) {
 
     writer.write_unchecked(report.rev,          4);
     writer.write_unchecked(report.msg_type,     4);
+    writer.write_unchecked(report.ecu_id,       8);
 
     switch (report.msg_type) {
         case ECU_REPORT_DATA:
@@ -211,12 +213,13 @@ ECUReportBytes_t ecu_report_serialize(ECUReport_t& report) {
 
     return data;
 }
-std::pair<uint8_t, ECU_REPORT_TYPE_t> ecu_report_deserialize_rev_msg_type(const ECUReportBytes_t& data) {
+std::array<uint8_t, 3> ecu_report_deserialize_rev_msg_type_id(const ECUReportBytes_t& data) {
+    std::array<uint8_t, 3> result;
     // The first byte contains: rev (4 bits, MSB), msg_type (4 bits, LSB)
-    uint8_t first = data[0];
-    uint8_t rev = (first >> 4) & 0x0F;
-    ECU_REPORT_TYPE_t msg_type = static_cast<ECU_REPORT_TYPE_t>(first & 0x0F);
-    return {rev, msg_type};
+    result[0] = (data[0] >> 4) & 0x0F; // rev
+    result[1] = data[0]        & 0x0F; // msg_type
+    result[2] = data[1];               // ecu_id
+    return result;
 }
 ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data) {
     
@@ -226,8 +229,9 @@ ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data) {
     etl::bit_stream_reader reader(data_span, etl::endian::big);
 
     ECUReport_t report;
-    report.rev = reader.read_unchecked<uint8_t>                 (4);
-    report.msg_type = reader.read_unchecked<ECU_REPORT_TYPE_t>(4);
+    report.rev = reader.read_unchecked<uint8_t>               (4); // Report structure revision number
+    report.msg_type = reader.read_unchecked<ECU_REPORT_TYPE_t>(4); // Message type
+    report.ecu_id = reader.read_unchecked<uint8_t>            (8); // ECU ID
 
     switch (report.msg_type) {
         case ECU_REPORT_DATA:
@@ -285,6 +289,7 @@ void ecu_report_print(ECUReport_t& ecu_report, bool print_bin)
     SerialUSB.println("ECU Report:");
     SerialUSB.print("rev: "); if (print_bin) ecu_bin_print(ecu_report.rev,                    4); SerialUSB.print(String(ecu_report.rev)); SerialUSB.println();
     SerialUSB.print("msg_type: "); if (print_bin) ecu_bin_print(ecu_report.msg_type,          4); SerialUSB.print(String(ecu_report.msg_type)); SerialUSB.println();
+    SerialUSB.print("ecu_id: "); if (print_bin) ecu_bin_print(ecu_report.ecu_id,              8); SerialUSB.print(String(ecu_report.ecu_id)); SerialUSB.println();
 
     switch (ecu_report.msg_type) {
         case ECU_REPORT_DATA:
