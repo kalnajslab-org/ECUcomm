@@ -49,7 +49,7 @@ void ecu_report_init(ECUReport_t& ecu_report, uint8_t ecu_id)
     ecu_report.cpu_temp = 0;
 }
 
-void add_status(bool heat_on, uint8_t temp_setpoint, bool rs41_regen_active, bool rs41_en, bool tsen_power, ECUReport_t& report) {
+void add_status(bool heat_on, float temp_setpoint, bool rs41_regen_active, bool rs41_en, bool tsen_power, ECUReport_t& report) {
     report.temp_setpoint = temp_setpoint+100;
     report.heat_on = heat_on;
     report.rs41_en = rs41_en;
