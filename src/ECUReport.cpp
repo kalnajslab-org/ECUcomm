@@ -327,7 +327,7 @@ void ecu_report_print(ECUReport_t& ecu_report, bool print_bin)
             SerialUSB.print("rs41_hum: "); if (print_bin) ecu_bin_print(ecu_report.rs41_hum,         10); SerialUSB.print(String(ecu_report.rs41_hum/10.0, 1) + "%"); SerialUSB.println();
             SerialUSB.print("rs41_hst: "); if (print_bin) ecu_bin_print(ecu_report.rs41_hst,          8); SerialUSB.print(String((ecu_report.rs41_hst/1.0)-100.0, 1) + "degC"); SerialUSB.println();
             SerialUSB.print("rs41_pres: "); if (print_bin) ecu_bin_print(ecu_report.rs41_pres,       17); SerialUSB.print(String(ecu_report.rs41_pres/100.0, 2) + "hPa"); SerialUSB.println();
-            SerialUSB.print("rs41_magXY: "); if (print_bin) ecu_bin_print(ecu_report.rs41_magXY,      8); SerialUSB.print(String(((ecu_report.rs41_magXY/255.0)*2000.0)-1000.0, 1) + "deg"); SerialUSB.println();
+            SerialUSB.print("rs41_magXY: "); if (print_bin) ecu_bin_print(ecu_report.rs41_magXY,      8); SerialUSB.print(String(((ecu_report.rs41_magXY/255.0)*2000.0)-1000.0, 1) + "counts"); SerialUSB.println();
             SerialUSB.print("rs41_pcb_h: "); if (print_bin) ecu_bin_print(ecu_report.rs41_pcb_h,      1); SerialUSB.print(ecu_report.rs41_pcb_h?"True":"False"); SerialUSB.println();
             SerialUSB.print("tsen_airt: "); if (print_bin) ecu_bin_print(ecu_report.tsen_airt,       12); SerialUSB.print(ecu_report.tsen_airt, HEX); SerialUSB.println();
             SerialUSB.print("tsen_ptemp: "); if (print_bin) ecu_bin_print(ecu_report.tsen_ptemp,     24); SerialUSB.print(ecu_report.tsen_ptemp, HEX); SerialUSB.println();
