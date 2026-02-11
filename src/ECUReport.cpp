@@ -112,12 +112,12 @@ void add_rs41(bool valid, bool rs41_regen_active, float airt, float hum, float h
         report.rs41_pres = pres * 100;
     }
 
-    if (magXY < 0.0) {
+    if (magXY < -1000) {
         report.rs41_magXY = 0;
-    } else if (magXY > 360.0) {
+    } else if (magXY > 1000) {
         report.rs41_magXY = 255;
     } else {
-        report.rs41_magXY = (magXY / 360.0) * 255.0;
+        report.rs41_magXY = ((magXY + 1000)/2000.0) * 255.0;
     }
 
     report.rs41_pcb_h = pcb_h;

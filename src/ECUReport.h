@@ -73,7 +73,7 @@ struct ECUReport_t
             uint16_t rs41_hum:     10;  // RS41 Humidity*10 (0-1023 : 0.0% to 102.3%)
             uint8_t  rs41_hst:      8;  // RS41 Humidity Sensor Temperature+100 (0-255 : -100C to 125C)
             uint32_t rs41_pres:    17;  // RS41 Pressure*100 (0-131071 : 0.0hPa to 1310.71hPa) (should we do log10?)
-            uint8_t  rs41_magXY:    8;  // RS41 Magnetometer XY (0-255 : 0-360 degrees)
+            uint8_t  rs41_magXY:    8;  // RS41 Magnetometer XY (-1000-1000 : 0 to 255 counts)
             uint8_t  rs41_pcb_h:    1;  // RS41 PCB Heater On (bool)
             uint16_t tsen_airt:    12;  // Raw
             uint32_t tsen_ptemp:   24;  // Raw
