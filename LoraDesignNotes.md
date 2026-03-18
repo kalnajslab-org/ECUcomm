@@ -5,6 +5,7 @@
 - **Module:** RFM95W (SX1276 silicon)
 - **Configuration:** SF9 / BW250 / CR 4/5 (assumed) / CRC on
 - **Band:** 869.4–869.65 MHz (ETSI EN 300 220 sub-band g1)
+- **Center frequency:** 869.525 MHz (exact center — at BW250 signal edges land precisely at 869.400 and 869.650 MHz)
 - **Duty cycle limit:** 10% (sub-band g1 allows 10%, versus 1% on main 868 MHz channels)
 - **Max power:** 500mW ERP on this sub-band
 
@@ -107,4 +108,4 @@ A mismatch in LDR between TX and RX can cause framing issues even when SF and BW
 
 The ETL `bit_stream_writer/reader` (big-endian) is used for portable, bit-exact packing. Direct `memcpy` of the C bitfield struct to the TX buffer is **not safe** — C bitfield layout is implementation-defined and non-portable.
 
-The `bit_stream_writer` ensures consistent packing across platforms, regardless of endianness or compiler bitfield behavior. Always use the provided serialization functions to convert between the `ECU_REPORT_DATA` struct and the byte buffer sent over LoRa.
+See `ecu_telemetry.h` / `ecu_telemetry.cpp` for the full encode/decode implementation.
