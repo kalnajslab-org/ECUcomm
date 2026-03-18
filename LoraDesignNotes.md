@@ -106,6 +106,86 @@ A mismatch in LDR between TX and RX can cause framing issues even when SF and BW
 
 ## Wire Format
 
-The ETL `bit_stream_writer/reader` (big-endian) is used for portable, bit-exact packing. Direct `memcpy` of the C bitfield struct to the TX buffer is **not safe** — C bitfield layout is implementation-defined and non-portable.
+The ETL `bit_stream_writer/reader` (big-endian) is used for portable, bit-exact packing. Direct `memcpy` of the C bitfield struct to the TX buffer is **not safe** — C bitfield layout is implementation-defined and non-portable. Always use the provided serialization functions to convert between the `ECU_REPORT_DATA` struct and the byte buffer sent over LoRa.
 
-See `ecu_telemetry.h` / `ecu_telemetry.cpp` for the full encode/decode implementation.
+---
+
+## Software Architecture
+
+### Platform
+
+- **Teensy 4.1**, bare metal, single-threaded cooperative scheduler
+- **No RTOS** — tasks are cooperative, yielding explicitly, never preempting each other
+- **Arduino LoRa library** (Sandeep Mistry) driving the RFM95W over SPI
+
+### Serial Paths
+
+Two independent serial paths with different underlying mechanisms:
+
+| Path | Transport | Buffering |
+|---|---|---|
+| Master control | UART | Teensy `Serial` library ISR-managed ring buffer |
+| LoRa | SPI | Arduino LoRa library, ISR callback |
+
+### LoRa RX Architecture
+
+`onReceive` callback is used rather than polling `parsePacket()`. Since no other task has latency requirements that would be impacted by the SPI ISR overhead, the preemption cost is acceptable.
+
+The callback is kept minimal — drain the packet into a `volatile` buffer and set a flag. All decoding happens in the cooperative task:
+
+```cpp
+volatile bool lora_rx_ready = false;
+uint8_t       lora_rx_buf[ECU_TX_BUF_SIZE];
+volatile int  lora_rx_len = 0;
+
+void on_lora_receive(int packet_size) {
+    lora_rx_len = 0;
+    while (LoRa.available() && lora_rx_len < sizeof(lora_rx_buf)) {
+        lora_rx_buf[lora_rx_len++] = LoRa.read();
+    }
+    lora_rx_ready = true;  // set last
+}
+```
+
+```cpp
+void lora_rx_task() {
+    if (!lora_rx_ready) return;
+    lora_rx_ready = false;  // clear before processing, not after
+
+    ecu_report_data_t msg;
+    if (ecu_decode_report_data(lora_rx_buf, lora_rx_len, msg)) {
+        // hand off to executive
+    }
+}
+```
+
+`lora_rx_ready` is cleared **before** processing to minimise the window in which an arriving packet could be missed. A single buffer is sufficient at 0.5 Hz — two packets will never queue before the task runs.
+
+### LoRa TX Architecture
+
+`endPacket(true)` is used for non-blocking async transmit. The TX task checks `LoRa.isTransmitting()` before starting a new packet:
+
+```cpp
+void lora_tx_task() {
+    if (LoRa.isTransmitting()) return;
+
+    uint8_t tx_buf[ECU_TX_BUF_SIZE];
+    size_t len = ecu_encode_report_data(current_report, tx_buf, sizeof(tx_buf));
+    if (len == 0) return;
+
+    LoRa.beginPacket();
+    LoRa.write(tx_buf, len);
+    LoRa.endPacket(true);  // async — returns immediately
+}
+```
+
+### Diagnostics
+
+RSSI and SNR are available immediately after a packet is received and should be logged:
+
+```cpp
+int   rssi = LoRa.packetRssi();   // dBm
+float snr  = LoRa.packetSnr();    // dB
+```
+
+These are useful for link budget validation and for investigating SF/BW configuration issues (see SF/BW Matching Requirement above).
