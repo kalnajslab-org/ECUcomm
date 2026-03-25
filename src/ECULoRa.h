@@ -118,4 +118,22 @@ extern float ecu_lora_snr();
 // Get the frequency error of the last received message.
 extern long ecu_lora_frequency_error();
 
+// LoRa configuration parameters read back from the SX1276 hardware registers.
+struct ECULoRaConfig_t {
+    long frequency;  // Hz, from SX1276 Frf registers (0x06–0x08)
+    long bandwidth;  // Hz, from SX1276 ModemConfig1 register (0x1D)
+    int sf;          // spreading factor (6–12), from SX1276 ModemConfig2 register (0x1E)
+    int power;       // TX power (dBm), from SX1276 PaConfig (0x09) and PaDac (0x4D) registers
+};
+
+// Read the current LoRa configuration directly from the SX1276 hardware registers.
+// Must be called after ECULoRaInit().
+extern ECULoRaConfig_t ecu_lora_get_config();
+
+// Read an SX1276 register directly via SPI.
+// Must be called after ECULoRaInit().
+// This is a hack, but it is needed to read the SX1276 registers to verify the LoRa 
+//configuration, since the arduino-LoRa library does not provide any public methods for this.
+extern uint8_t readLoRaReg(uint8_t address);
+
 #endif //_ECULORA_H_

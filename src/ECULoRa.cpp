@@ -1,4 +1,10 @@
 #include "ECULoRa.h"
+#include <SPI.h>
+
+// SPI interface and SS pin saved during init for direct register access.
+static SPIClass* lora_spi = nullptr;
+static int lora_ss_pin = -1;
+
 
 // Our operational mode.
 volatile ECULoRaMode_t ecu_lora_mode;
@@ -52,6 +58,8 @@ bool ECULoRaInit(
 
     ecu_lora_mode = mode;
     leader_mode_report_interval_ms = leader_report_interval_ms;
+    lora_spi = spi;
+    lora_ss_pin = ss_pin;
 
     LoRa.setPins(ss_pin, reset_pin, interrupt_pin);
 
@@ -231,6 +239,55 @@ float ecu_lora_snr()
 long ecu_lora_frequency_error()
 {
     return LoRa.packetFrequencyError();
+}
+
+ECULoRaConfig_t ecu_lora_get_config()
+{
+    ECULoRaConfig_t config;
+
+    // Frequency: SX1276 registers 0x06 (FrfMsb), 0x07 (FrfMid), 0x08 (FrfLsb).
+    // freq_hz = Frf * Fxosc / 2^19, where Fxosc = 32 MHz.
+    uint32_t frf = ((uint32_t)readLoRaReg(0x06) << 16)
+                 | ((uint32_t)readLoRaReg(0x07) << 8)
+                 |  (uint32_t)readLoRaReg(0x08);
+    config.frequency = (long)(((uint64_t)frf * 32000000UL) >> 19);
+
+    // Spreading factor: SX1276 ModemConfig2 register (0x1E), bits [7:4].
+    config.sf = readLoRaReg(0x1E) >> 4;
+
+    // Bandwidth: SX1276 ModemConfig1 register (0x1D), bits [7:4].
+    static const long bw_table[] = {
+        7800, 10400, 15600, 20800, 31250, 41700, 62500, 125000, 250000, 500000
+    };
+    uint8_t bw_idx = readLoRaReg(0x1D) >> 4;
+    config.bandwidth = (bw_idx < 10) ? bw_table[bw_idx] : -1;
+
+    // TX power: SX1276 registers 0x09 (PaConfig) and 0x4D (PaDac).
+    // arduino-LoRa always uses the PA_BOOST output pin.
+    // PaDac == 0x87 (high-power mode): power = (PaConfig[3:0]) + 5  (range 17–20 dBm)
+    // PaDac == 0x84 (normal mode):     power = (PaConfig[3:0]) + 2  (range  2–17 dBm)
+    uint8_t pa_config = readLoRaReg(0x09);
+    uint8_t pa_dac    = readLoRaReg(0x4d);
+    if (pa_dac == 0x87) {
+        config.power = (pa_config & 0x0F) + 5;
+    } else {
+        config.power = (pa_config & 0x0F) + 2;
+    }
+
+    return config;
+}
+
+// Read an SX1276 register directly via SPI, without using LoRaClass private methods.
+uint8_t readLoRaReg(uint8_t address)
+{
+    uint8_t response;
+    digitalWrite(lora_ss_pin, LOW);
+    lora_spi->beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
+    lora_spi->transfer(address & 0x7f);
+    response = lora_spi->transfer(0x00);
+    lora_spi->endTransaction();
+    digitalWrite(lora_ss_pin, HIGH);
+    return response;
 }
 
 // #endif // _ECULORA_H_
