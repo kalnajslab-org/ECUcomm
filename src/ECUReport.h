@@ -73,7 +73,7 @@ struct ECUReport_t
             uint16_t rs41_hum:     10;  // RS41 Humidity*10 (0-1023 : 0.0% to 102.3%)
             uint8_t  rs41_hst:      8;  // RS41 Humidity Sensor Temperature+100 (0-255 : -100C to 125C)
             uint32_t rs41_pres:    17;  // RS41 Pressure*100 (0-131071 : 0.0hPa to 1310.71hPa) (should we do log10?)
-            uint8_t  rs41_magXY:    8;  // RS41 Magnetometer XY (-1000-1000 : 0 to 255 counts)
+            uint8_t  rs41_hdg:      8;  // RS41 magnetic heading (0-255 : 0 to 360 degrees)
             uint8_t  rs41_pcb_h:    1;  // RS41 PCB Heater On (bool)
             uint16_t tsen_airt:    12;  // Raw
             uint32_t tsen_ptemp:   24;  // Raw
@@ -121,7 +121,7 @@ void add_status(bool heat_on, float temp_setpoint, bool rs41_regen_active, bool 
 // Add GPS data to an ECUReport_t.
 void add_gps(bool valid, double lat, double lon, double alt, uint sats, uint32_t date, uint32_t time, uint age_secs, ECUReport_t& report);
 // Add RS41 data to an ECUReport_t.
-void add_rs41(bool valid, bool rs41_regen_active, float airt, float hum, float hst, float pres, float magXY, bool pcb_h, ECUReport_t& report);
+void add_rs41(bool valid, bool rs41_regen_active, float airt, float hum, float hst, float pres, float hdg, bool pcb_h, ECUReport_t& report);
 // Add TSEN data to an ECUReport_t.
 void add_tsen(uint16_t airt, uint32_t prest, uint32_t pres, ECUReport_t& report);
 // Size of the serialized ECUReport_t in bytes, based on the message type.
