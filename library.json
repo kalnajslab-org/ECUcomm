@@ -1,0 +1,7 @@
+{
+  "name": "ECUComm",
+  "dependencies": {
+    "LoRa": "0.8.0",
+    "etlcpp/Embedded Template Library": "20.47.1"
+  }
+}
