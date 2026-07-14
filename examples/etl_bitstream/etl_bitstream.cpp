@@ -55,7 +55,9 @@ void setup()
     etl::array<char, 9U> write_buffer;
     etl::span<char> write_span(write_buffer.data(), write_buffer.size());
 
-    etl::bit_stream_writer bit_stream(write_span, etl::endian::little);
+    // ETL 21 separates bit order from byte order. This preserves the previous
+    // `endian::little` behavior, which selected least-significant-bit first.
+    etl::bit_stream_writer bit_stream(write_span, etl::bit_order::lsb_first);
     bit_stream.write_unchecked(test_write.a, 4);
     bit_stream.write_unchecked(test_write.b, 2);
     bit_stream.write_unchecked(test_write.c, 1);
@@ -79,7 +81,7 @@ void setup()
     read_buffer = write_buffer;
 
     etl::span<char> read_span(read_buffer.data(), read_buffer.size());
-    etl::bit_stream_reader bit_stream_reader(write_span, etl::endian::little);
+    etl::bit_stream_reader bit_stream_reader(read_span, etl::bit_order::lsb_first);
     BitfieldStruct test_read;
     test_read.a = bit_stream_reader.read_unchecked<uint8_t>(4);
     test_read.b = bit_stream_reader.read_unchecked<uint8_t>(2);
