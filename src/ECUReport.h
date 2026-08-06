@@ -9,7 +9,7 @@
 
 #include "etl/array.h"
 
-#define ECU_REPORT_REV 6
+#define ECU_REPORT_REV 7
 
 #define ECU_MAX_RAW_BYTES 200  // Maximum raw byte size for ECU report (for union in ECUReport_t)
 
@@ -37,6 +37,16 @@ enum ECU_REPORT_TYPE_ENUM : ECU_REPORT_TYPE_t {
 // Both message types start with the same header fields (rev and msg_type) to allow identification of the message type
 // during deserialization. The remainder of the message is interpreted based on the msg_type field, and is
 // defined by a union in the ECUReport_t struct.
+
+// Bit definitions for the rs41_status byte (matches RS41::RS41StatusFlags_t field order):
+constexpr uint8_t ECU_RS41_HIGH_INTERNAL_TEMP  = (1u << 0); // S.2: high internal temperature
+constexpr uint8_t ECU_RS41_REGEN_TEMP_LOW      = (1u << 1); // S.3: regen temperature low
+constexpr uint8_t ECU_RS41_PTU_FAILURE         = (1u << 2); // S.4: PTU failure
+constexpr uint8_t ECU_RS41_FLASH_FAILURE       = (1u << 3); // S.5: flash failure
+constexpr uint8_t ECU_RS41_LOW_INPUT_VOLTAGE   = (1u << 4); // E.6: low input voltage
+constexpr uint8_t ECU_RS41_NOT_CALIBRATED      = (1u << 5); // E.7: not calibrated
+constexpr uint8_t ECU_RS41_NO_PRESSURE_MODULE  = (1u << 6); // E.8: no pressure module
+constexpr uint8_t ECU_RS41_DISCONNECTED_BOOM   = (1u << 7); // E.9: disconnected boom
 
 // ECUReport_t defines documents/defines the data structure that will be sent over the LoRa network.
 // The data structure is defined with bitfields to establish the bit packing.
@@ -69,11 +79,12 @@ struct ECUReport_t
             uint8_t  gps_age_secs:  8;  // Age of GPS data in seconds (0 to 255) 255 = greater than 254
             uint8_t  rs41_valid:    1;  // RS41 data valid (bool)
             uint8_t  rs41_regen:    1; // RS41 regeneration active (bool)
-            uint16_t rs41_airt :   14;  // (RS41 Air Temperature+100)*100 (0-16383 : -100.00C to 63.83C) 
-            uint16_t rs41_hum:     10;  // RS41 Humidity*10 (0-1023 : 0.0% to 102.3%)
-            uint8_t  rs41_hst:      8;  // RS41 Humidity Sensor Temperature+100 (0-255 : -100C to 125C)
-            uint32_t rs41_pres:    17;  // RS41 Pressure*100 (0-131071 : 0.0hPa to 1310.71hPa) (should we do log10?)
+            uint16_t rs41_airt :   16;  // (T+100) x436.9067 (0-65535 : -100 to +50 degC)
+            uint16_t rs41_hum:     16;  // (RH+20) x543.1333 (0-65535 : -20 to +100 %RH)
+            uint16_t rs41_hst:     16;  // (T+100) x436.9067 (0-65535 : -100 to +50 degC)
+            uint16_t rs41_pres:    16;  // (ln(P)-3.9120) x21525.87 (0-65535 : ~50 to 1050 hPa)
             uint8_t  rs41_hdg:      8;  // RS41 magnetic heading (0-255 : 0 to 360 degrees)
+            uint8_t  rs41_status:   8;  // RS41 status flags byte (8 flags packed as bits, see ECU_RS41_*)
             uint8_t  rs41_pcb_h:    1;  // RS41 PCB Heater On (bool)
             uint16_t tsen_airt:    12;  // Raw
             uint32_t tsen_ptemp:   24;  // Raw
@@ -95,8 +106,8 @@ struct ECUReport_t
 // *** Update ECU_DATA_REPORT_SIZE_BITS when ECUReport_t is modified ***
 // (Use copliot to create this sum by by prompting: "sum of bitfield sizes in ECUReport_t")
 
-#define ECU_DATA_REPORT_SIZE_BITS (4 + 4 + 8 + 1 + 1 + 1 + 9 + 11 + 13 + 11 + 8 + 8 + 1 + 32 + 32 + 16 + 5 + 19 + 25 + 8 + 1 + 1 + 14 + 10 + 8 + 17 + 8 + 1 + 12 + 24 + 24 + 11)
-// Total bits: 348 bits = 44 bytes
+#define ECU_DATA_REPORT_SIZE_BITS (4 + 4 + 8 + 1 + 1 + 1 + 9 + 11 + 13 + 11 + 8 + 8 + 1 + 32 + 32 + 16 + 5 + 19 + 25 + 8 + 1 + 1 + 16 + 16 + 16 + 16 + 8 + 8 + 1 + 12 + 24 + 24 + 11)
+// Total bits: 371 bits = 47 bytes
 // Round up to bytes
 #define ECU_DATA_REPORT_SIZE_BYTES DIV_ROUND_UP(ECU_DATA_REPORT_SIZE_BITS, 8)
 
@@ -121,7 +132,7 @@ void add_status(bool heat_on, float temp_setpoint, bool rs41_regen_active, bool 
 // Add GPS data to an ECUReport_t.
 void add_gps(bool valid, double lat, double lon, double alt, uint sats, uint32_t date, uint32_t time, uint age_secs, ECUReport_t& report);
 // Add RS41 data to an ECUReport_t.
-void add_rs41(bool valid, bool rs41_regen_active, float airt, float hum, float hst, float pres, float hdg, bool pcb_h, ECUReport_t& report);
+void add_rs41(bool valid, bool rs41_regen_active, float airt, float hum, float hst, float pres, float hdg, uint8_t status, bool pcb_h, ECUReport_t& report);
 // Add TSEN data to an ECUReport_t.
 void add_tsen(uint16_t airt, uint32_t prest, uint32_t pres, ECUReport_t& report);
 // Size of the serialized ECUReport_t in bytes, based on the message type.

@@ -42,6 +42,7 @@ void ecu_report_init(ECUReport_t& ecu_report, uint8_t ecu_id)
     ecu_report.rs41_hst = 0;
     ecu_report.rs41_pres = 0;
     ecu_report.rs41_hdg = 0;
+    ecu_report.rs41_status = 0;
     ecu_report.rs41_pcb_h = 0;
     ecu_report.tsen_airt = 0;
     ecu_report.tsen_ptemp = 0;
@@ -76,40 +77,28 @@ void add_gps(bool valid, double lat, double lon, double alt, uint sats, uint32_t
     report.gps_age_secs = (age_secs > 255) ? 255 : age_secs;
 }
 
-void add_rs41(bool valid, bool rs41_regen_active, float airt, float hum, float hst, float pres, float hdg, bool pcb_h, ECUReport_t& report) {
+void add_rs41(bool valid, bool rs41_regen_active, float airt, float hum, float hst, float pres, float hdg, uint8_t status, bool pcb_h, ECUReport_t& report) {
     report.rs41_valid = valid;
     report.rs41_regen = rs41_regen_active;
 
-    if (airt < -100.0) {
-        report.rs41_airt = 0;
-    } else if (airt > 63.83) {
-        report.rs41_airt = 16383;
-    } else {
-        report.rs41_airt = (airt + 100) * 100;
-    }
+    // Air temp and humidity sensor temp: (T+100)x436.9067, -100 to +50 degC
+    float airt_raw = (airt + 100.0) * 436.9067;
+    report.rs41_airt = (airt_raw < 0.0) ? 0 : (airt_raw > 65535.0) ? 65535 : airt_raw;
 
-    if  (hum < 0.0) {
-        report.rs41_hum = 0;
-    } else if (hum > 102.3) {
-        report.rs41_hum = 1023;
-    } else {
-        report.rs41_hum = hum * 10;
-    }
+    float hst_raw = (hst + 100.0) * 436.9067;
+    report.rs41_hst = (hst_raw < 0.0) ? 0 : (hst_raw > 65535.0) ? 65535 : hst_raw;
 
-    if (hst < -100.0) {
-        report.rs41_hst = 0;
-    } else if (hst > 125.0) {
-        report.rs41_hst = 255;
-    } else {
-        report.rs41_hst = hst + 100;
-    }
+    // RH: (RH+20)x543.1333, -20 to +100 %RH
+    float hum_raw = (hum + 20.0) * 543.1333;
+    report.rs41_hum = (hum_raw < 0.0) ? 0 : (hum_raw > 65535.0) ? 65535 : hum_raw;
 
-    if (pres < 0.0) {
+    // Pressure: ln(P) encoding -- (ln(P)-3.9120)x21525.87, ~50-1050 hPa;
+    // guard against pres <= 0 to avoid undefined behavior in logf()
+    if (pres <= 0.0) {
         report.rs41_pres = 0;
-    } else if (pres > 1310.71) {
-        report.rs41_pres = 131071;
     } else {
-        report.rs41_pres = pres * 100;
+        float pres_raw = (logf(pres) - 3.9120) * 21525.87;
+        report.rs41_pres = (pres_raw < 0.0) ? 0 : (pres_raw > 65535.0) ? 65535 : pres_raw;
     }
 
     if (hdg < 0.0) {
@@ -120,6 +109,7 @@ void add_rs41(bool valid, bool rs41_regen_active, float airt, float hum, float h
         report.rs41_hdg = (hdg / 360.0) * 255.0;
     }
 
+    report.rs41_status = status;
     report.rs41_pcb_h = pcb_h;
 }
 
@@ -200,11 +190,12 @@ ECUReportBytes_t ecu_report_serialize(ECUReport_t& report) {
             writer.write_unchecked(report.gps_age_secs, 8);
             writer.write_unchecked(report.rs41_valid,   1);
             writer.write_unchecked(report.rs41_regen,   1);
-            writer.write_unchecked(report.rs41_airt,   14);
-            writer.write_unchecked(report.rs41_hum,    10);
-            writer.write_unchecked(report.rs41_hst,     8);
-            writer.write_unchecked(report.rs41_pres,   17);
+            writer.write_unchecked(report.rs41_airt,   16);
+            writer.write_unchecked(report.rs41_hum,    16);
+            writer.write_unchecked(report.rs41_hst,    16);
+            writer.write_unchecked(report.rs41_pres,   16);
             writer.write_unchecked(report.rs41_hdg,     8);
+            writer.write_unchecked(report.rs41_status,  8);
             writer.write_unchecked(report.rs41_pcb_h,   1);
             writer.write_unchecked(report.tsen_airt,   12);
             writer.write_unchecked(report.tsen_ptemp,  24);
@@ -265,11 +256,12 @@ ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data) {
             report.gps_age_secs = reader.read_unchecked<uint8_t> (8); // Age of GPS data in seconds (0 to 255) 255 = greater than 254
             report.rs41_valid = reader.read_unchecked<uint8_t>   (1); // RS41 data valid (bool)
             report.rs41_regen = reader.read_unchecked<uint8_t>   (1); // RS41 regeneration active (bool)
-            report.rs41_airt = reader.read_unchecked<uint16_t>  (14); // (RS41 Air Temperature+100)*100 (0-16383 : -100.00C to 63.83C)
-            report.rs41_hum = reader.read_unchecked<uint16_t>   (10); // RS41 Humidity*10 (0-1023 : 0.0% to 102.3%)
-            report.rs41_hst = reader.read_unchecked<uint8_t>     (8); // RS41 Humidity Sensor Temperature+100 (0-255 : -100C to 125C)
-            report.rs41_pres = reader.read_unchecked<uint32_t>  (17); // RS41 Pressure*100 (0-131071 : 0.0hPa to 1310.71hPa) (should we do log10?)
+            report.rs41_airt = reader.read_unchecked<uint16_t>  (16); // (T+100) x436.9067 (-100 to +50 degC)
+            report.rs41_hum = reader.read_unchecked<uint16_t>   (16); // (RH+20) x543.1333 (-20 to +100 %RH)
+            report.rs41_hst = reader.read_unchecked<uint16_t>   (16); // (T+100) x436.9067 (-100 to +50 degC)
+            report.rs41_pres = reader.read_unchecked<uint16_t>  (16); // (ln(P)-3.9120) x21525.87 (~50 to 1050 hPa)
             report.rs41_hdg = reader.read_unchecked<uint8_t>     (8); // RS41 magnetic heading (0-255 : 0-360 degrees)
+            report.rs41_status = reader.read_unchecked<uint8_t>  (8); // RS41 status flags byte (8 flags packed as bits)
             report.rs41_pcb_h = reader.read_unchecked<uint8_t>   (1); // RS41 PCB Heater On (bool)
             report.tsen_airt = reader.read_unchecked<uint16_t>  (12); // Raw
             report.tsen_ptemp = reader.read_unchecked<uint32_t> (24); // Raw
@@ -323,11 +315,12 @@ void ecu_report_print(ECUReport_t& ecu_report, bool print_bin)
             SerialUSB.print("gps_age_secs: "); if (print_bin) ecu_bin_print(ecu_report.gps_age_secs,  8); SerialUSB.print(String(ecu_report.gps_age_secs) + "s"); SerialUSB.println();
             SerialUSB.print("rs41_valid: "); if (print_bin) ecu_bin_print(ecu_report.rs41_valid,      1); SerialUSB.print(ecu_report.rs41_valid?"True":"False"); SerialUSB.println();
             SerialUSB.print("rs41_regen: "); if (print_bin) ecu_bin_print(ecu_report.rs41_regen,      1); SerialUSB.print(ecu_report.rs41_regen?"True":"False"); SerialUSB.println();
-            SerialUSB.print("rs41_airt: "); if (print_bin) ecu_bin_print(ecu_report.rs41_airt,       14); SerialUSB.print(String((ecu_report.rs41_airt/100.0)-100.0, 2) + "degC"); SerialUSB.println();
-            SerialUSB.print("rs41_hum: "); if (print_bin) ecu_bin_print(ecu_report.rs41_hum,         10); SerialUSB.print(String(ecu_report.rs41_hum/10.0, 1) + "%"); SerialUSB.println();
-            SerialUSB.print("rs41_hst: "); if (print_bin) ecu_bin_print(ecu_report.rs41_hst,          8); SerialUSB.print(String((ecu_report.rs41_hst/1.0)-100.0, 1) + "degC"); SerialUSB.println();
-            SerialUSB.print("rs41_pres: "); if (print_bin) ecu_bin_print(ecu_report.rs41_pres,       17); SerialUSB.print(String(ecu_report.rs41_pres/100.0, 2) + "hPa"); SerialUSB.println();
+            SerialUSB.print("rs41_airt: "); if (print_bin) ecu_bin_print(ecu_report.rs41_airt,       16); SerialUSB.print(String((ecu_report.rs41_airt/436.9067)-100.0, 2) + "degC"); SerialUSB.println();
+            SerialUSB.print("rs41_hum: "); if (print_bin) ecu_bin_print(ecu_report.rs41_hum,         16); SerialUSB.print(String((ecu_report.rs41_hum/543.1333)-20.0, 1) + "%"); SerialUSB.println();
+            SerialUSB.print("rs41_hst: "); if (print_bin) ecu_bin_print(ecu_report.rs41_hst,         16); SerialUSB.print(String((ecu_report.rs41_hst/436.9067)-100.0, 1) + "degC"); SerialUSB.println();
+            SerialUSB.print("rs41_pres: "); if (print_bin) ecu_bin_print(ecu_report.rs41_pres,       16); SerialUSB.print(String(expf((ecu_report.rs41_pres/21525.87)+3.9120), 2) + "hPa"); SerialUSB.println();
             SerialUSB.print("rs41_hdg: "); if (print_bin) ecu_bin_print(ecu_report.rs41_hdg,          8); SerialUSB.print(String((ecu_report.rs41_hdg/255.0)*360.0, 1) + "deg"); SerialUSB.println();
+            SerialUSB.print("rs41_status: "); if (print_bin) ecu_bin_print(ecu_report.rs41_status,    8); SerialUSB.print(String(ecu_report.rs41_status)); SerialUSB.println();
             SerialUSB.print("rs41_pcb_h: "); if (print_bin) ecu_bin_print(ecu_report.rs41_pcb_h,      1); SerialUSB.print(ecu_report.rs41_pcb_h?"True":"False"); SerialUSB.println();
             SerialUSB.print("tsen_airt: "); if (print_bin) ecu_bin_print(ecu_report.tsen_airt,       12); SerialUSB.print(ecu_report.tsen_airt, HEX); SerialUSB.println();
             SerialUSB.print("tsen_ptemp: "); if (print_bin) ecu_bin_print(ecu_report.tsen_ptemp,     24); SerialUSB.print(ecu_report.tsen_ptemp, HEX); SerialUSB.println();
