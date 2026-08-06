@@ -26,14 +26,14 @@ void ecu_report_init(ECUReport_t& ecu_report, uint8_t ecu_id)
     ecu_report.board_t = 0;
     ecu_report.temp_setpoint = 0;
     ecu_report.switch_mA = 0;
-    ecu_report.gps_valid = 0;
-    ecu_report.gps_lat = 0;
-    ecu_report.gps_lon = 0;
-    ecu_report.gps_alt = 0;
-    ecu_report.gps_sats = 0;
-    ecu_report.gps_date = 0;
-    ecu_report.gps_time = 0;
-    ecu_report.gps_age_secs = 255;
+    // gps_* fields are intentionally NOT reset here. GPS sentences complete
+    // asynchronously over several loop() iterations, so clearing them every
+    // iteration made the transmitted report only reflect GPS data when a
+    // sentence happened to finish decoding on the exact iteration that got
+    // serialized -- causing spurious "invalid" reports even with a solid
+    // fix. add_gps() is the sole writer; it's called once at startup to seed
+    // the initial sentinel state, and after that only when new GPS data
+    // actually arrives, so the last-known fix persists across reports.
     ecu_report.board_t = 0;
     ecu_report.rs41_valid = 0;
     ecu_report.rs41_regen = 0;
