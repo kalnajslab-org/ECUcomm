@@ -91,6 +91,21 @@ void rxReadyISR(int packetSize)
 {
     uint i;
 
+    // A packet shorter than the id field can't be a valid ECULoRaPacket_t
+    // (e.g. a CRC-failed or noise packet). Discard it here rather than let
+    // the data_len computation below underflow, which would otherwise report
+    // a huge bogus data_len alongside stale data[] contents from the
+    // previous reception.
+    if (packetSize < (int)sizeof(rx_lora_packet.id))
+    {
+        // Drain the FIFO so the radio isn't left in a bad state, but discard the packet.
+        for (i = 0; i < (uint)packetSize; i++)
+        {
+            LoRa.read();
+        }
+        return;
+    }
+
     // We can't be sure that this packet was sent by another ECULoRa system.
     // Make sure that a bogus packet will not overrun the buffer.
     // Recall that ECULoRaPacket_t.data_len is not transmitted in the packet.
