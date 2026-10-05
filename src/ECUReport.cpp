@@ -92,12 +92,12 @@ void add_rs41(bool valid, bool rs41_regen_active, float airt, float hum, float h
     float hum_raw = (hum + 20.0) * 543.1333;
     report.rs41_hum = (hum_raw < 0.0) ? 0 : (hum_raw > 65535.0) ? 65535 : hum_raw;
 
-    // Pressure: ln(P) encoding -- (ln(P)-3.9120)x21525.87, ~50-1050 hPa;
+    // Pressure: ln(P) encoding -- (ln(P)-3.4012)x18533.04, ~30-1030 hPa;
     // guard against pres <= 0 to avoid undefined behavior in logf()
     if (pres <= 0.0) {
         report.rs41_pres = 0;
     } else {
-        float pres_raw = (logf(pres) - 3.9120) * 21525.87;
+        float pres_raw = (logf(pres) - 3.4012) * 18533.04;
         report.rs41_pres = (pres_raw < 0.0) ? 0 : (pres_raw > 65535.0) ? 65535 : pres_raw;
     }
 
@@ -259,7 +259,7 @@ ECUReport_t ecu_report_deserialize(ECUReportBytes_t& data) {
             report.rs41_airt = reader.read_unchecked<uint16_t>  (16); // (T+100) x436.9067 (-100 to +50 degC)
             report.rs41_hum = reader.read_unchecked<uint16_t>   (16); // (RH+20) x543.1333 (-20 to +100 %RH)
             report.rs41_hst = reader.read_unchecked<uint16_t>   (16); // (T+100) x436.9067 (-100 to +50 degC)
-            report.rs41_pres = reader.read_unchecked<uint16_t>  (16); // (ln(P)-3.9120) x21525.87 (~50 to 1050 hPa)
+            report.rs41_pres = reader.read_unchecked<uint16_t>  (16); // (ln(P)-3.4012) x18533.04 (~30 to 1030 hPa)
             report.rs41_hdg = reader.read_unchecked<uint8_t>     (8); // RS41 magnetic heading (0-255 : 0-360 degrees)
             report.rs41_status = reader.read_unchecked<uint8_t>  (8); // RS41 status flags byte (8 flags packed as bits)
             report.rs41_pcb_h = reader.read_unchecked<uint8_t>   (1); // RS41 PCB Heater On (bool)
@@ -318,7 +318,7 @@ void ecu_report_print(ECUReport_t& ecu_report, bool print_bin)
             SerialUSB.print("rs41_airt: "); if (print_bin) ecu_bin_print(ecu_report.rs41_airt,       16); SerialUSB.print(String((ecu_report.rs41_airt/436.9067)-100.0, 2) + "degC"); SerialUSB.println();
             SerialUSB.print("rs41_hum: "); if (print_bin) ecu_bin_print(ecu_report.rs41_hum,         16); SerialUSB.print(String((ecu_report.rs41_hum/543.1333)-20.0, 1) + "%"); SerialUSB.println();
             SerialUSB.print("rs41_hst: "); if (print_bin) ecu_bin_print(ecu_report.rs41_hst,         16); SerialUSB.print(String((ecu_report.rs41_hst/436.9067)-100.0, 1) + "degC"); SerialUSB.println();
-            SerialUSB.print("rs41_pres: "); if (print_bin) ecu_bin_print(ecu_report.rs41_pres,       16); SerialUSB.print(String(expf((ecu_report.rs41_pres/21525.87)+3.9120), 2) + "hPa"); SerialUSB.println();
+            SerialUSB.print("rs41_pres: "); if (print_bin) ecu_bin_print(ecu_report.rs41_pres,       16); SerialUSB.print(String(expf((ecu_report.rs41_pres/18533.04)+3.4012), 2) + "hPa"); SerialUSB.println();
             SerialUSB.print("rs41_hdg: "); if (print_bin) ecu_bin_print(ecu_report.rs41_hdg,          8); SerialUSB.print(String((ecu_report.rs41_hdg/255.0)*360.0, 1) + "deg"); SerialUSB.println();
             SerialUSB.print("rs41_status: "); if (print_bin) ecu_bin_print(ecu_report.rs41_status,    8); SerialUSB.print(String(ecu_report.rs41_status)); SerialUSB.println();
             SerialUSB.print("rs41_pcb_h: "); if (print_bin) ecu_bin_print(ecu_report.rs41_pcb_h,      1); SerialUSB.print(ecu_report.rs41_pcb_h?"True":"False"); SerialUSB.println();

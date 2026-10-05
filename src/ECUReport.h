@@ -9,7 +9,7 @@
 
 #include "etl/array.h"
 
-#define ECU_REPORT_REV 7
+#define ECU_REPORT_REV 8
 
 #define ECU_MAX_RAW_BYTES 200  // Maximum raw byte size for ECU report (for union in ECUReport_t)
 
@@ -82,7 +82,7 @@ struct ECUReport_t
             uint16_t rs41_airt :   16;  // (T+100) x436.9067 (0-65535 : -100 to +50 degC)
             uint16_t rs41_hum:     16;  // (RH+20) x543.1333 (0-65535 : -20 to +100 %RH)
             uint16_t rs41_hst:     16;  // (T+100) x436.9067 (0-65535 : -100 to +50 degC)
-            uint16_t rs41_pres:    16;  // (ln(P)-3.9120) x21525.87 (0-65535 : ~50 to 1050 hPa)
+            uint16_t rs41_pres:    16;  // (ln(P)-3.4012) x18533.04 (0-65535 : ~30 to 1030 hPa)
             uint8_t  rs41_hdg:      8;  // RS41 magnetic heading (0-255 : 0 to 360 degrees)
             uint8_t  rs41_status:   8;  // RS41 status flags byte (8 flags packed as bits, see ECU_RS41_*)
             uint8_t  rs41_pcb_h:    1;  // RS41 PCB Heater On (bool)
